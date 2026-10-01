@@ -21,7 +21,6 @@
             "preset": "recommended"
         },
         "domains": {
-            "next": "recommended",
             "react": "recommended"
         }
     },
