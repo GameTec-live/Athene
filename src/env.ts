@@ -6,6 +6,11 @@ export const env = createEnv({
         DATABASE_URL: v.string(),
         BETTER_AUTH_URL: v.pipe(v.string(), v.url()),
         BETTER_AUTH_SECRET: v.string(),
+        FORGEJO_BASE_URL: v.pipe(v.string(), v.url()),
+        FORGEJO_TOKEN: v.string(),
+        FORGEJO_CLIENT_ID: v.string(),
+        FORGEJO_CLIENT_SECRET: v.string(),
+        FORGEJO_DISCOVERY_URL: v.pipe(v.string(), v.url()),
     },
 
     /**
@@ -14,13 +19,15 @@ export const env = createEnv({
      */
     clientPrefix: "VITE_",
 
-    client: {},
+    client: {
+        VITE_FORGEJO_BASE_URL: v.pipe(v.string(), v.url()),
+    },
 
     /**
      * What object holds the environment variables at runtime. This is usually
      * `process.env` or `import.meta.env`.
      */
-    runtimeEnv: import.meta.env,
+    runtimeEnv: process.env,
 
     /**
      * By default, this library will feed the environment variables directly to
