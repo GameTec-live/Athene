@@ -10,7 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as TestIndexRouteImport } from './routes/test/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthenticatedDashboardRouteRouteImport } from './routes/_authenticated/dashboard/route'
+import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard/index'
+import { Route as AuthenticatedDashboardAutogradingRouteImport } from './routes/_authenticated/dashboard/autograding'
+import { Route as AuthenticatedDashboardOrganizationsRouteImport } from './routes/_authenticated/dashboard/organizations'
+import { Route as AuthenticatedDashboardRostersRouteImport } from './routes/_authenticated/dashboard/rosters'
+import { Route as AuthenticatedDashboardSettingsRouteImport } from './routes/_authenticated/dashboard/settings'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -18,11 +25,51 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TestIndexRoute = TestIndexRouteImport.update({
-  id: '/test/',
-  path: '/test/',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedDashboardRouteRoute =
+  AuthenticatedDashboardRouteRouteImport.update({
+    id: '/dashboard',
+    path: '/dashboard',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDashboardIndexRoute =
+  AuthenticatedDashboardIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedDashboardRouteRoute,
+  } as any)
+const AuthenticatedDashboardAutogradingRoute =
+  AuthenticatedDashboardAutogradingRouteImport.update({
+    id: '/autograding',
+    path: '/autograding',
+    getParentRoute: () => AuthenticatedDashboardRouteRoute,
+  } as any)
+const AuthenticatedDashboardOrganizationsRoute =
+  AuthenticatedDashboardOrganizationsRouteImport.update({
+    id: '/organizations',
+    path: '/organizations',
+    getParentRoute: () => AuthenticatedDashboardRouteRoute,
+  } as any)
+const AuthenticatedDashboardRostersRoute =
+  AuthenticatedDashboardRostersRouteImport.update({
+    id: '/rosters',
+    path: '/rosters',
+    getParentRoute: () => AuthenticatedDashboardRouteRoute,
+  } as any)
+const AuthenticatedDashboardSettingsRoute =
+  AuthenticatedDashboardSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AuthenticatedDashboardRouteRoute,
+  } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -31,31 +78,78 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/test/': typeof TestIndexRoute
+  '/login': typeof LoginRoute
+  '/dashboard': typeof AuthenticatedDashboardRouteRouteWithChildren
+  '/dashboard/autograding': typeof AuthenticatedDashboardAutogradingRoute
+  '/dashboard/organizations': typeof AuthenticatedDashboardOrganizationsRoute
+  '/dashboard/rosters': typeof AuthenticatedDashboardRostersRoute
+  '/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/dashboard/': typeof AuthenticatedDashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/test': typeof TestIndexRoute
+  '/login': typeof LoginRoute
+  '/dashboard/autograding': typeof AuthenticatedDashboardAutogradingRoute
+  '/dashboard/organizations': typeof AuthenticatedDashboardOrganizationsRoute
+  '/dashboard/rosters': typeof AuthenticatedDashboardRostersRoute
+  '/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/dashboard': typeof AuthenticatedDashboardIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/test/': typeof TestIndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteRouteWithChildren
+  '/_authenticated/dashboard/autograding': typeof AuthenticatedDashboardAutogradingRoute
+  '/_authenticated/dashboard/organizations': typeof AuthenticatedDashboardOrganizationsRoute
+  '/_authenticated/dashboard/rosters': typeof AuthenticatedDashboardRostersRoute
+  '/_authenticated/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/test/' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/dashboard'
+    | '/dashboard/autograding'
+    | '/dashboard/organizations'
+    | '/dashboard/rosters'
+    | '/dashboard/settings'
+    | '/api/auth/$'
+    | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/test' | '/api/auth/$'
-  id: '__root__' | '/' | '/test/' | '/api/auth/$'
+  to:
+    | '/'
+    | '/login'
+    | '/dashboard/autograding'
+    | '/dashboard/organizations'
+    | '/dashboard/rosters'
+    | '/dashboard/settings'
+    | '/api/auth/$'
+    | '/dashboard'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/login'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/dashboard/autograding'
+    | '/_authenticated/dashboard/organizations'
+    | '/_authenticated/dashboard/rosters'
+    | '/_authenticated/dashboard/settings'
+    | '/api/auth/$'
+    | '/_authenticated/dashboard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  TestIndexRoute: typeof TestIndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  LoginRoute: typeof LoginRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -68,12 +162,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/test/': {
-      id: '/test/'
-      path: '/test'
-      fullPath: '/test/'
-      preLoaderRoute: typeof TestIndexRouteImport
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard/': {
+      id: '/_authenticated/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof AuthenticatedDashboardIndexRouteImport
+      parentRoute: typeof AuthenticatedDashboardRouteRoute
+    }
+    '/_authenticated/dashboard/autograding': {
+      id: '/_authenticated/dashboard/autograding'
+      path: '/autograding'
+      fullPath: '/dashboard/autograding'
+      preLoaderRoute: typeof AuthenticatedDashboardAutogradingRouteImport
+      parentRoute: typeof AuthenticatedDashboardRouteRoute
+    }
+    '/_authenticated/dashboard/organizations': {
+      id: '/_authenticated/dashboard/organizations'
+      path: '/organizations'
+      fullPath: '/dashboard/organizations'
+      preLoaderRoute: typeof AuthenticatedDashboardOrganizationsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRouteRoute
+    }
+    '/_authenticated/dashboard/rosters': {
+      id: '/_authenticated/dashboard/rosters'
+      path: '/rosters'
+      fullPath: '/dashboard/rosters'
+      preLoaderRoute: typeof AuthenticatedDashboardRostersRouteImport
+      parentRoute: typeof AuthenticatedDashboardRouteRoute
+    }
+    '/_authenticated/dashboard/settings': {
+      id: '/_authenticated/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof AuthenticatedDashboardSettingsRouteImport
+      parentRoute: typeof AuthenticatedDashboardRouteRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -85,9 +228,46 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedDashboardRouteRouteChildren {
+  AuthenticatedDashboardAutogradingRoute: typeof AuthenticatedDashboardAutogradingRoute
+  AuthenticatedDashboardOrganizationsRoute: typeof AuthenticatedDashboardOrganizationsRoute
+  AuthenticatedDashboardRostersRoute: typeof AuthenticatedDashboardRostersRoute
+  AuthenticatedDashboardSettingsRoute: typeof AuthenticatedDashboardSettingsRoute
+  AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
+}
+
+const AuthenticatedDashboardRouteRouteChildren: AuthenticatedDashboardRouteRouteChildren =
+  {
+    AuthenticatedDashboardAutogradingRoute:
+      AuthenticatedDashboardAutogradingRoute,
+    AuthenticatedDashboardOrganizationsRoute:
+      AuthenticatedDashboardOrganizationsRoute,
+    AuthenticatedDashboardRostersRoute: AuthenticatedDashboardRostersRoute,
+    AuthenticatedDashboardSettingsRoute: AuthenticatedDashboardSettingsRoute,
+    AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
+  }
+
+const AuthenticatedDashboardRouteRouteWithChildren =
+  AuthenticatedDashboardRouteRoute._addFileChildren(
+    AuthenticatedDashboardRouteRouteChildren,
+  )
+
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedDashboardRouteRoute: typeof AuthenticatedDashboardRouteRouteWithChildren
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedDashboardRouteRoute:
+    AuthenticatedDashboardRouteRouteWithChildren,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  TestIndexRoute: TestIndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  LoginRoute: LoginRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

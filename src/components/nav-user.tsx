@@ -1,110 +1,146 @@
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "#/components/ui/avatar.tsx"
+    BadgeCheckIcon,
+    BellIcon,
+    ChevronsUpDownIcon,
+    CreditCardIcon,
+    LogOutIcon,
+    SparklesIcon,
+} from "lucide-react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "#/components/ui/dropdown-menu.tsx"
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+} from "#/components/ui/avatar.tsx";
 import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from "#/components/ui/sidebar.tsx"
-import { ChevronsUpDownIcon, SparklesIcon, BadgeCheckIcon, CreditCardIcon, BellIcon, LogOutIcon } from "lucide-react"
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "#/components/ui/dropdown-menu.tsx";
+import {
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    useSidebar,
+} from "#/components/ui/sidebar.tsx";
+import { authClient } from "#/lib/auth-client";
+import { Spinner } from "./ui/spinner";
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
-}) {
-  const { isMobile } = useSidebar()
-  return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <SidebarMenuButton
-                size="lg"
-                className="md:h-8 md:p-0 data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground"
-              />
-            }
-          >
-            <Avatar className="h-8 w-8 rounded-lg">
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-            </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{user.name}</span>
-              <span className="truncate text-xs">{user.email}</span>
+export function NavUser() {
+    const { isMobile } = useSidebar();
+
+    const { data: session, isPending, error } = authClient.useSession();
+
+    if (isPending) {
+        return (
+            <div className="flex h-8 w-8 items-center justify-center">
+                <Spinner />
             </div>
-            <ChevronsUpDownIcon className="ml-auto size-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
-            align="end"
-            sideOffset={4}
-          >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
-                </div>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <SparklesIcon
-                />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheckIcon
-                />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCardIcon
-                />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <BellIcon
-                />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOutIcon
-              />
-              Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  )
+        );
+    }
+
+    if (error) {
+        return <div>Error: {error.message}</div>;
+    }
+
+    return (
+        <SidebarMenu>
+            <SidebarMenuItem>
+                <DropdownMenu>
+                    <DropdownMenuTrigger
+                        render={
+                            <SidebarMenuButton
+                                size="lg"
+                                className="md:h-8 md:p-0 data-open:bg-sidebar-accent data-open:text-sidebar-accent-foreground"
+                            />
+                        }
+                    >
+                        <Avatar className="h-8 w-8 rounded-lg">
+                            <AvatarImage
+                                src={session?.user.image ?? undefined}
+                                alt={session?.user?.name}
+                            />
+                            <AvatarFallback className="rounded-lg">
+                                {session?.user?.name
+                                    ?.split(" ")
+                                    .map((n) => n[0])
+                                    .join("")}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="grid flex-1 text-left text-sm leading-tight">
+                            <span className="truncate font-medium">
+                                {session?.user?.name}
+                            </span>
+                            <span className="truncate text-xs">
+                                {session?.user?.email}
+                            </span>
+                        </div>
+                        <ChevronsUpDownIcon className="ml-auto size-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                        className="min-w-56 rounded-lg"
+                        side={isMobile ? "bottom" : "right"}
+                        align="end"
+                        sideOffset={4}
+                    >
+                        <DropdownMenuGroup>
+                            <DropdownMenuLabel className="p-0 font-normal">
+                                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                                    <Avatar className="h-8 w-8 rounded-lg">
+                                        <AvatarImage
+                                            src={
+                                                session?.user.image ?? undefined
+                                            }
+                                            alt={session?.user?.name}
+                                        />
+                                        <AvatarFallback className="rounded-lg">
+                                            CN
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="grid flex-1 text-left text-sm leading-tight">
+                                        <span className="truncate font-medium">
+                                            {session?.user?.name}
+                                        </span>
+                                        <span className="truncate text-xs">
+                                            {session?.user?.email}
+                                        </span>
+                                    </div>
+                                </div>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuGroup>
+                                <DropdownMenuItem>
+                                    <SparklesIcon />
+                                    Upgrade to Pro
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuGroup>
+                                <DropdownMenuItem>
+                                    <BadgeCheckIcon />
+                                    Account
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                    <CreditCardIcon />
+                                    Billing
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                    <BellIcon />
+                                    Notifications
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>
+                                <LogOutIcon />
+                                Log out
+                            </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </SidebarMenuItem>
+        </SidebarMenu>
+    );
 }
