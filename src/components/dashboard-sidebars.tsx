@@ -1,10 +1,15 @@
 import { linkOptions } from "@tanstack/react-router";
 import { useDashboardNavigation } from "#/lib/dashboard-navigation";
-import { organizations, rosters } from "#/lib/dashboard-placeholders";
+import { rosters } from "#/lib/dashboard-placeholders";
+import type { DashboardOrganization } from "#/lib/forgejo/orgs";
 import { SecondSidebar } from "./second-sidebar";
 import { ThirdSidebar } from "./third-sidebar";
 
-export function DashboardSidebars() {
+export function DashboardSidebars({
+    organizations,
+}: {
+    organizations: DashboardOrganization[];
+}) {
     const { section, orgId, classId, rosterId } = useDashboardNavigation();
 
     if (section === "organizations") {
@@ -22,7 +27,9 @@ export function DashboardSidebars() {
                         }),
                     }))}
                 />
-                {orgId && <ThirdSidebar orgId={orgId} classId={classId} />}
+                {orgId && organizations.some((org) => org.id === orgId) && (
+                    <ThirdSidebar orgId={orgId} classId={classId} />
+                )}
             </>
         );
     }

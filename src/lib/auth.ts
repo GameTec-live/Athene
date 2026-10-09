@@ -20,6 +20,13 @@ export const auth = betterAuth({
                     clientId: env.FORGEJO_CLIENT_ID,
                     clientSecret: env.FORGEJO_CLIENT_SECRET,
                     discoveryUrl: env.FORGEJO_DISCOVERY_URL,
+                    scopes: [
+                        "openid",
+                        "profile",
+                        "email",
+                        "groups",
+                        "read:organization",
+                    ],
                 },
             ],
         }),
