@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/dashboard/")({
-    component: RouteComponent,
+    staticData: { dashboardSection: "organizations" },
+    component: () => (
+        <p className="text-muted-foreground">
+            Select an organization to browse its classes.
+        </p>
+    ),
 });
-
-function RouteComponent() {
-    return <div>Hello "/_authenticated/dashboard/"!</div>;
-}

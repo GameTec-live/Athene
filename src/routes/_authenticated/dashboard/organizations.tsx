@@ -1,11 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute('/_authenticated/dashboard/organizations')(
-  {
-    component: RouteComponent,
-  },
-)
+export const Route = createFileRoute("/_authenticated/dashboard/organizations")(
+    {
+        staticData: { dashboardSection: "organizations" },
+        component: RouteComponent,
+    },
+);
 
 function RouteComponent() {
-  return <div>Hello "/_authenticated/dashboard/organizations"!</div>
+    return <div>Hello "/_authenticated/dashboard/organizations"!</div>;
 }

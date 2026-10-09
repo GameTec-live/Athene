@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, linkOptions } from "@tanstack/react-router";
 import {
     BookOpenCheckIcon,
     BuildingIcon,
@@ -17,119 +17,124 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-} from "#/components/ui/sidebar.tsx";
+    useSidebar,
+} from "#/components/ui/sidebar";
+import { useDashboardNavigation } from "#/lib/dashboard-navigation";
 import { NavUser } from "./nav-user";
+
+const navigation = [
+    {
+        section: "organizations",
+        label: "Organizations",
+        icon: BuildingIcon,
+        link: linkOptions({ to: "/dashboard" }),
+    },
+    {
+        section: "rosters",
+        label: "Rosters",
+        icon: PersonStandingIcon,
+        link: linkOptions({ to: "/dashboard/rosters" }),
+    },
+    {
+        section: "autograding",
+        label: "Autograding",
+        icon: BookOpenCheckIcon,
+        link: linkOptions({ to: "/dashboard/autograding" }),
+    },
+    {
+        section: "settings",
+        label: "Settings",
+        icon: Settings2Icon,
+        link: linkOptions({ to: "/dashboard/settings" }),
+    },
+];
 
 export function AppSidebar({
     children,
     ...props
 }: React.ComponentProps<typeof Sidebar>) {
-    return (
-        <Sidebar
-            collapsible="icon"
-            className="overflow-hidden *:data-[sidebar=sidebar]:flex-row"
-            {...props}
-        >
-            {/* This is the first sidebar */}
-            {/* We disable collapsible and adjust width to icon. */}
-            {/* This will make the sidebar appear as icons. */}
-            <Sidebar
-                collapsible="none"
-                className="w-[calc(var(--sidebar-width-icon)+1px)]! border-r"
-            >
-                <SidebarHeader>
-                    <SidebarMenu>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton
-                                size="lg"
-                                className="md:h-8 md:p-0"
-                                render={<Link to="/dashboard" />}
-                            >
-                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                                    <GraduationCapIcon className="size-4" />
-                                </div>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    </SidebarMenu>
-                </SidebarHeader>
-                <SidebarContent>
-                    <SidebarGroup>
-                        <SidebarGroupContent className="px-1.5 md:px-0">
-                            <SidebarMenu>
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton
-                                        tooltip={{
-                                            children: "Organizations",
-                                            hidden: false,
-                                        }}
-                                        isActive={false}
-                                        render={
-                                            <Link to="/dashboard/organizations" />
-                                        }
-                                        className="px-2.5 md:px-2"
-                                    >
-                                        <BuildingIcon />
-                                        <span>Organizations</span>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton
-                                        tooltip={{
-                                            children: "Rosters",
-                                            hidden: false,
-                                        }}
-                                        isActive={false}
-                                        render={
-                                            <Link to="/dashboard/rosters" />
-                                        }
-                                        className="px-2.5 md:px-2"
-                                    >
-                                        <PersonStandingIcon />
-                                        <span>Rosters</span>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton
-                                        tooltip={{
-                                            children: "Autograding",
-                                            hidden: false,
-                                        }}
-                                        isActive={false}
-                                        render={
-                                            <Link to="/dashboard/autograding" />
-                                        }
-                                        className="px-2.5 md:px-2"
-                                    >
-                                        <BookOpenCheckIcon />
-                                        <span>Autograding</span>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton
-                                        tooltip={{
-                                            children: "Settings",
-                                            hidden: false,
-                                        }}
-                                        isActive={false}
-                                        render={
-                                            <Link to="/dashboard/settings" />
-                                        }
-                                        className="px-2.5 md:px-2"
-                                    >
-                                        <Settings2Icon />
-                                        <span>Settings</span>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                </SidebarContent>
-                <SidebarFooter>
-                    <NavUser />
-                </SidebarFooter>
-            </Sidebar>
+    const { section } = useDashboardNavigation();
+    const { setOpenMobile } = useSidebar();
 
-            {children}
+    return (
+        <Sidebar collapsible="icon" className="overflow-hidden" {...props}>
+            <div className="flex h-full min-w-0 overflow-x-auto">
+                <Sidebar
+                    collapsible="none"
+                    className="w-[calc(var(--sidebar-width-icon)+1px)]! shrink-0 border-r"
+                >
+                    <SidebarHeader>
+                        <SidebarMenu>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton
+                                    size="lg"
+                                    className="md:h-8 md:p-0"
+                                    render={
+                                        <Link
+                                            to="/dashboard"
+                                            aria-label="Dashboard"
+                                        />
+                                    }
+                                >
+                                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                                        <GraduationCapIcon className="size-4" />
+                                    </div>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        </SidebarMenu>
+                    </SidebarHeader>
+                    <SidebarContent>
+                        <SidebarGroup>
+                            <SidebarGroupContent className="px-1.5 md:px-0">
+                                <SidebarMenu>
+                                    {navigation.map((item) => (
+                                        <SidebarMenuItem key={item.section}>
+                                            <SidebarMenuButton
+                                                tooltip={{
+                                                    children: item.label,
+                                                    hidden: false,
+                                                }}
+                                                isActive={
+                                                    section === item.section
+                                                }
+                                                render={
+                                                    <Link
+                                                        {...item.link}
+                                                        aria-label={item.label}
+                                                        aria-current={
+                                                            section ===
+                                                            item.section
+                                                                ? "page"
+                                                                : undefined
+                                                        }
+                                                    />
+                                                }
+                                                onClick={() => {
+                                                    if (
+                                                        item.section ===
+                                                            "settings" ||
+                                                        item.section ===
+                                                            "autograding"
+                                                    )
+                                                        setOpenMobile(false);
+                                                }}
+                                                className="px-2.5 md:px-2"
+                                            >
+                                                <item.icon />
+                                                <span>{item.label}</span>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    ))}
+                                </SidebarMenu>
+                            </SidebarGroupContent>
+                        </SidebarGroup>
+                    </SidebarContent>
+                    <SidebarFooter>
+                        <NavUser />
+                    </SidebarFooter>
+                </Sidebar>
+                {children}
+            </div>
         </Sidebar>
     );
 }
