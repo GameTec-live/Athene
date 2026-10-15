@@ -1,5 +1,5 @@
 import { Link, type LinkProps } from "@tanstack/react-router";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import {
     Sidebar,
     SidebarContent,
@@ -13,26 +13,34 @@ import {
 export type SidebarEntry = {
     id: string;
     name: string;
-    description: string;
+    description?: string;
+    icon?: ReactNode;
     link: LinkProps;
 };
 
-export function SecondSidebar({
+export function SidebarList({
     title,
     items,
     selectedId,
     closeOnSelect = false,
+    emptyMessage = "No items yet.",
+    search: searchProp,
+    onSearchChange,
 }: {
     title: string;
     items: SidebarEntry[];
     selectedId?: string;
     closeOnSelect?: boolean;
+    emptyMessage?: string;
+    search?: string;
+    onSearchChange?: (search: string) => void;
 }) {
-    const [search, setSearch] = useState("");
+    const [internalSearch, setInternalSearch] = useState("");
+    const search = searchProp ?? internalSearch;
     const { setOpenMobile } = useSidebar();
     const query = search.trim().toLowerCase();
     const filteredItems = items.filter((item) =>
-        `${item.name} ${item.description}`.toLowerCase().includes(query),
+        `${item.name} ${item.description ?? ""}`.toLowerCase().includes(query),
     );
 
     return (
@@ -47,7 +55,11 @@ export function SecondSidebar({
                     aria-label={`Search ${title.toLowerCase()}`}
                     placeholder="Type to search..."
                     value={search}
-                    onChange={(event) => setSearch(event.target.value)}
+                    onChange={(event) =>
+                        (onSearchChange ?? setInternalSearch)(
+                            event.target.value,
+                        )
+                    }
                 />
             </SidebarHeader>
             <SidebarContent>
@@ -64,17 +76,24 @@ export function SecondSidebar({
                                 onClick={() => {
                                     if (closeOnSelect) setOpenMobile(false);
                                 }}
-                                className="flex flex-col items-start gap-2 border-b p-4 text-sm leading-tight last:border-b-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
+                                className="flex items-start gap-3 border-b p-4 text-sm leading-tight last:border-b-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
                             >
-                                <span className="font-medium">{item.name}</span>
-                                <span className="line-clamp-2 text-xs whitespace-break-spaces">
-                                    {item.description}
+                                {item.icon}
+                                <span className="flex min-w-0 flex-col gap-2">
+                                    <span className="font-medium">
+                                        {item.name}
+                                    </span>
+                                    {item.description && (
+                                        <span className="line-clamp-2 text-xs whitespace-break-spaces">
+                                            {item.description}
+                                        </span>
+                                    )}
                                 </span>
                             </Link>
                         ))}
                         {filteredItems.length === 0 && (
                             <p className="p-4 text-sm text-muted-foreground">
-                                No results found.
+                                {query ? "No results found." : emptyMessage}
                             </p>
                         )}
                     </SidebarGroupContent>

@@ -27,7 +27,7 @@ const navigation = [
         section: "organizations",
         label: "Organizations",
         icon: BuildingIcon,
-        link: linkOptions({ to: "/dashboard" }),
+        link: linkOptions({ to: "/dashboard/organizations" }),
     },
     {
         section: "rosters",

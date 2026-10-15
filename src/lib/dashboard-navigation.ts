@@ -6,12 +6,6 @@ export type DashboardSection =
     | "autograding"
     | "settings";
 
-declare module "@tanstack/react-router" {
-    interface StaticDataRouteOption {
-        dashboardSection?: DashboardSection;
-    }
-}
-
 export function useDashboardNavigation() {
     const section = useMatches({
         select: (matches) =>
@@ -20,16 +14,16 @@ export function useDashboardNavigation() {
                 .find((match) => match.staticData.dashboardSection)?.staticData
                 .dashboardSection,
     });
-    const { orgId, classId, rosterId } = useParams({ strict: false });
+    const { orgSlug, classId, rosterId } = useParams({ strict: false });
 
     return {
         section,
-        orgId,
+        orgSlug,
         classId,
         rosterId,
         sidebarCount:
             section === "organizations"
-                ? orgId
+                ? orgSlug
                     ? 2
                     : 1
                 : section === "rosters"

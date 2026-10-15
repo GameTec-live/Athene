@@ -1,16 +1,3 @@
-export const classes = [
-    {
-        id: "class",
-        name: "Example class",
-        description: "Class content is coming soon.",
-    },
-    {
-        id: "another-class",
-        name: "Another class",
-        description: "Class content is coming soon.",
-    },
-];
-
 export const rosters = [
     {
         id: "roster",

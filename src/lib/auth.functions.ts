@@ -1,5 +1,8 @@
 import { createMiddleware, createServerFn } from "@tanstack/react-start";
-import { getRequestHeaders } from "@tanstack/react-start/server";
+import {
+    getRequestHeaders,
+    setResponseStatus,
+} from "@tanstack/react-start/server";
 import { auth } from "#/lib/auth";
 
 export const getSession = createServerFn({ method: "GET" }).handler(
@@ -13,7 +16,10 @@ export const authMiddleware = createMiddleware({ type: "function" }).server(
         const session = await auth.api.getSession({
             headers: getRequestHeaders(),
         });
-        if (!session) throw new Error("Unauthorized");
+        if (!session) {
+            setResponseStatus(401);
+            throw new Error("Unauthorized");
+        }
         return next({ context: { user: session.user } });
     },
 );
