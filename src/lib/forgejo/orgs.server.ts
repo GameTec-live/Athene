@@ -5,7 +5,7 @@ import {
 import { auth } from "#/lib/auth";
 import type { Organization } from "./api";
 import { api } from "./forgejo-api";
-import { getForgejoOrganizationNames } from "./groups";
+import { getUserOrganizationSlugs } from "./memberships.server";
 
 const CACHE_TTL = 60_000;
 const CACHE_LIMIT = 256;
@@ -16,22 +16,43 @@ const organizations = new Map<
     { expiresAt: number; value: Promise<Organization & { id: number }> }
 >();
 
-/** Resolves org slugs for the current user via better-auth */
-export async function getOrganizationSlugs() {
+/** Fetches the signed-in user's Forgejo profile. */
+async function getForgejoProfile() {
     const headers = getRequestHeaders();
     const accounts = await auth.api.listUserAccounts({ headers });
     const account = accounts.find(
         (account) => account.providerId === "forgejo",
     );
-    if (!account) return [];
+    if (!account) return null;
 
     const { data } = await auth.api.accountInfo({
         headers,
         query: { accountId: account.id },
     });
-    return getForgejoOrganizationNames(
-        data && "groups" in data ? data.groups : undefined,
-    );
+    return data;
+}
+
+export async function getForgejoUsername() {
+    const data = await getForgejoProfile();
+    return requireForgejoUsername(data);
+}
+
+function requireForgejoUsername(data: unknown) {
+    const username =
+        data && typeof data === "object" && "preferred_username" in data
+            ? data.preferred_username
+            : undefined;
+    if (typeof username !== "string" || !username.trim()) {
+        throw new Error("The signed-in user has no Forgejo username");
+    }
+    return username;
+}
+
+/** Reads current memberships so newly created organizations appear immediately. */
+export async function getOrganizationSlugs() {
+    const data = await getForgejoProfile();
+    if (!data) return [];
+    return getUserOrganizationSlugs(requireForgejoUsername(data));
 }
 
 /** Fetches the details of a specific organization by its slug, cached */
