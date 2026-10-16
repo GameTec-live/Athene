@@ -1,5 +1,5 @@
 import { useDashboardNavigation } from "#/lib/dashboard-navigation";
-import { ClassesSidebar } from "./classes-sidebar";
+import { ClassesSidebar } from "./class/classes-sidebar";
 import { OrganizationsSidebar } from "./organizations-sidebar";
 import { RostersSidebar } from "./rosters-sidebar";
 
