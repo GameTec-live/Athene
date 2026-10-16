@@ -5,19 +5,14 @@ import * as v from "valibot";
 import { db } from "#/db";
 import { classRoom } from "#/db/schema";
 import { authMiddleware } from "./auth.functions";
+import { classNameSchema, orgSlugSchema } from "./common-schemas";
 import { requireOrganizationAccess } from "./forgejo/orgs.server";
 
 export const getOrganizationClasses = createServerFn({ method: "GET" })
     .middleware([authMiddleware])
     .validator(
         v.object({
-            orgSlug: v.pipe(
-                v.string(),
-                v.trim(),
-                v.toLowerCase(),
-                v.minLength(1),
-                v.maxLength(255),
-            ),
+            orgSlug: orgSlugSchema,
         }),
     )
     .handler(async ({ data }) => {
@@ -44,5 +39,25 @@ export const getClass = createServerFn({ method: "GET" })
             .where(eq(classRoom.id, data.classId));
         if (!classroom) throw notFound();
         await requireOrganizationAccess(classroom.organizationId);
+        return classroom;
+    });
+
+export const createClass = createServerFn({ method: "POST" })
+    .middleware([authMiddleware])
+    .validator(
+        v.object({
+            orgSlug: orgSlugSchema,
+            name: classNameSchema,
+        }),
+    )
+    .handler(async ({ data }) => {
+        const organization = await requireOrganizationAccess(data.orgSlug);
+        const [classroom] = await db
+            .insert(classRoom)
+            .values({
+                organizationId: organization.id,
+                name: data.name,
+            })
+            .returning();
         return classroom;
     });

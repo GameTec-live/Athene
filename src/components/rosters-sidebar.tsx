@@ -8,6 +8,7 @@ export function RostersSidebar({ rosterId }: { rosterId?: string }) {
             title="Rosters"
             selectedId={rosterId}
             closeOnSelect
+            onCreateNew={() => {}}
             items={rosters.map((roster) => ({
                 ...roster,
                 link: linkOptions({

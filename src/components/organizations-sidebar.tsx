@@ -20,6 +20,7 @@ export function OrganizationsSidebar({ orgSlug }: { orgSlug?: string }) {
                 search={search}
                 onSearchChange={setSearch}
                 emptyMessage="You are not a member of any organizations."
+                onCreateNew={() => {}}
                 items={slugs.map((slug, index) => ({
                     id: slug,
                     name:

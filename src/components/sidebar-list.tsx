@@ -1,4 +1,5 @@
 import { Link, type LinkProps } from "@tanstack/react-router";
+import { PlusIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import {
     Sidebar,
@@ -9,6 +10,7 @@ import {
     SidebarInput,
     useSidebar,
 } from "#/components/ui/sidebar";
+import { Button } from "./ui/button";
 
 export type SidebarEntry = {
     id: string;
@@ -26,6 +28,7 @@ export function SidebarList({
     emptyMessage = "No items yet.",
     search: searchProp,
     onSearchChange,
+    onCreateNew,
 }: {
     title: string;
     items: SidebarEntry[];
@@ -34,6 +37,7 @@ export function SidebarList({
     emptyMessage?: string;
     search?: string;
     onSearchChange?: (search: string) => void;
+    onCreateNew: () => void;
 }) {
     const [internalSearch, setInternalSearch] = useState("");
     const search = searchProp ?? internalSearch;
@@ -50,7 +54,18 @@ export function SidebarList({
             className="w-(--dashboard-panel-width)! shrink-0 border-r group-data-[collapsible=icon]:hidden"
         >
             <SidebarHeader className="gap-3.5 border-b p-4">
-                <h2 className="text-sm font-semibold">{title}</h2>
+                <div className="flex items-center justify-between gap-3">
+                    <h2 className="text-sm font-semibold">{title}</h2>
+
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        aria-label={`Create new ${title.toLowerCase()}`}
+                        onClick={onCreateNew}
+                    >
+                        <PlusIcon />
+                    </Button>
+                </div>
                 <SidebarInput
                     aria-label={`Search ${title.toLowerCase()}`}
                     placeholder="Type to search..."
