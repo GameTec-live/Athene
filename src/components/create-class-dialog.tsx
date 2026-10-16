@@ -118,9 +118,13 @@ function CreateClassForm({
                     <DialogClose render={<Button variant="outline" />}>
                         Cancel
                     </DialogClose>
-                    <Button type="submit" disabled={form.state.isSubmitting}>
-                        {form.state.isSubmitting ? "Creating…" : "Create class"}
-                    </Button>
+                    <form.Subscribe selector={(state) => state.isSubmitting}>
+                        {(isSubmitting) => (
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? "Creating…" : "Create class"}
+                            </Button>
+                        )}
+                    </form.Subscribe>
                 </DialogFooter>
             </FieldGroup>
         </form>
