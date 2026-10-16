@@ -5,6 +5,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { db } from "#/db";
 import * as schema from "#/db/schema";
 import { env } from "#/env";
+import { ac, adminRole, teacherRole } from "./permissions";
 
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
@@ -12,7 +13,13 @@ export const auth = betterAuth({
         schema,
     }),
     plugins: [
-        admin(),
+        admin({
+            ac,
+            roles: {
+                admin: adminRole,
+                teacher: teacherRole,
+            },
+        }),
         genericOAuth({
             config: [
                 {

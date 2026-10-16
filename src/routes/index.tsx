@@ -10,6 +10,9 @@ function Home() {
         <div>
             <p>welcome!</p>
             {session?.user && <p>{session.user.name}</p>}
+            {session?.user && (
+                <p>Role: {session.user.role ?? "No role assigned"}</p>
+            )}
         </div>
     );
 }
