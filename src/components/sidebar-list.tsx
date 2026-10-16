@@ -1,5 +1,5 @@
 import { Link, type LinkProps } from "@tanstack/react-router";
-import { PlusIcon } from "lucide-react";
+import { PencilIcon, PlusIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import {
     Sidebar,
@@ -29,6 +29,7 @@ export function SidebarList({
     search: searchProp,
     onSearchChange,
     onCreateNew,
+    onEdit,
 }: {
     title: string;
     items: SidebarEntry[];
@@ -38,6 +39,7 @@ export function SidebarList({
     search?: string;
     onSearchChange?: (search: string) => void;
     onCreateNew: () => void;
+    onEdit?: (item: SidebarEntry) => void;
 }) {
     const [internalSearch, setInternalSearch] = useState("");
     const search = searchProp ?? internalSearch;
@@ -81,30 +83,48 @@ export function SidebarList({
                 <SidebarGroup className="px-0">
                     <SidebarGroupContent>
                         {filteredItems.map((item) => (
-                            <Link
-                                {...item.link}
+                            <div
                                 key={item.id}
-                                aria-current={
-                                    selectedId === item.id ? "page" : undefined
-                                }
                                 data-active={selectedId === item.id}
-                                onClick={() => {
-                                    if (closeOnSelect) setOpenMobile(false);
-                                }}
-                                className="flex items-start gap-3 border-b p-4 text-sm leading-tight last:border-b-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
+                                className="flex items-center border-b text-sm leading-tight last:border-b-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
                             >
-                                {item.icon}
-                                <span className="flex min-w-0 flex-col gap-2">
-                                    <span className="font-medium">
-                                        {item.name}
-                                    </span>
-                                    {item.description && (
-                                        <span className="line-clamp-2 text-xs whitespace-break-spaces">
-                                            {item.description}
+                                <Link
+                                    {...item.link}
+                                    aria-current={
+                                        selectedId === item.id
+                                            ? "page"
+                                            : undefined
+                                    }
+                                    onClick={() => {
+                                        if (closeOnSelect) setOpenMobile(false);
+                                    }}
+                                    className="flex min-w-0 flex-1 items-start gap-3 p-4"
+                                >
+                                    {item.icon}
+                                    <span className="flex min-w-0 flex-col gap-2">
+                                        <span className="font-medium break-words">
+                                            {item.name}
                                         </span>
-                                    )}
-                                </span>
-                            </Link>
+                                        {item.description && (
+                                            <span className="line-clamp-2 text-xs whitespace-break-spaces">
+                                                {item.description}
+                                            </span>
+                                        )}
+                                    </span>
+                                </Link>
+                                {onEdit && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="mr-4"
+                                        aria-label={`Edit ${item.name}`}
+                                        title={`Edit ${item.name}`}
+                                        onClick={() => onEdit(item)}
+                                    >
+                                        <PencilIcon />
+                                    </Button>
+                                )}
+                            </div>
                         ))}
                         {filteredItems.length === 0 && (
                             <p className="p-4 text-sm text-muted-foreground">

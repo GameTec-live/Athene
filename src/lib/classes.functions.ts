@@ -1,6 +1,6 @@
 import { notFound } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import * as v from "valibot";
 import { db } from "#/db";
 import { classRoom } from "#/db/schema";
@@ -59,5 +59,53 @@ export const createClass = createServerFn({ method: "POST" })
                 name: data.name,
             })
             .returning();
+        return classroom;
+    });
+
+export const updateClass = createServerFn({ method: "POST" })
+    .middleware([authMiddleware])
+    .validator(
+        v.object({
+            orgSlug: orgSlugSchema,
+            classId: v.pipe(v.string(), v.uuid()),
+            name: classNameSchema,
+        }),
+    )
+    .handler(async ({ data }) => {
+        const organization = await requireOrganizationAccess(data.orgSlug);
+        const [classroom] = await db
+            .update(classRoom)
+            .set({ name: data.name })
+            .where(
+                and(
+                    eq(classRoom.id, data.classId),
+                    eq(classRoom.organizationId, organization.id),
+                ),
+            )
+            .returning();
+        if (!classroom) throw notFound();
+        return classroom;
+    });
+
+export const deleteClass = createServerFn({ method: "POST" })
+    .middleware([authMiddleware])
+    .validator(
+        v.object({
+            orgSlug: orgSlugSchema,
+            classId: v.pipe(v.string(), v.uuid()),
+        }),
+    )
+    .handler(async ({ data }) => {
+        const organization = await requireOrganizationAccess(data.orgSlug);
+        const [classroom] = await db
+            .delete(classRoom)
+            .where(
+                and(
+                    eq(classRoom.id, data.classId),
+                    eq(classRoom.organizationId, organization.id),
+                ),
+            )
+            .returning();
+        if (!classroom) throw notFound();
         return classroom;
     });
