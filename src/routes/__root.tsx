@@ -1,6 +1,7 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { Toaster } from "#/components/ui/toast";
 import { TooltipProvider } from "#/components/ui/tooltip";
 import appCss from "../styles.css?url";
 
@@ -47,6 +48,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                         },
                     ]}
                 />
+                <Toaster />
                 <Scripts />
             </body>
         </html>

@@ -14,16 +14,17 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedDashboardRouteRouteImport } from './routes/_authenticated/dashboard/route'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard/index'
-import { Route as AuthenticatedDashboardOrgIdRouteRouteImport } from './routes/_authenticated/dashboard/$orgId/route'
 import { Route as AuthenticatedDashboardAutogradingRouteImport } from './routes/_authenticated/dashboard/autograding'
-import { Route as AuthenticatedDashboardOrganizationsRouteImport } from './routes/_authenticated/dashboard/organizations'
+import { Route as AuthenticatedDashboardOrganizationsRouteRouteImport } from './routes/_authenticated/dashboard/organizations/route'
 import { Route as AuthenticatedDashboardRostersRouteRouteImport } from './routes/_authenticated/dashboard/rosters/route'
 import { Route as AuthenticatedDashboardSettingsRouteImport } from './routes/_authenticated/dashboard/settings'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as AuthenticatedDashboardOrgIdIndexRouteImport } from './routes/_authenticated/dashboard/$orgId/index'
-import { Route as AuthenticatedDashboardOrgIdClassIdRouteImport } from './routes/_authenticated/dashboard/$orgId/$classId'
+import { Route as AuthenticatedDashboardOrganizationsIndexRouteImport } from './routes/_authenticated/dashboard/organizations/index'
+import { Route as AuthenticatedDashboardOrganizationsOrgSlugRouteRouteImport } from './routes/_authenticated/dashboard/organizations/$orgSlug/route'
 import { Route as AuthenticatedDashboardRostersIndexRouteImport } from './routes/_authenticated/dashboard/rosters/index'
 import { Route as AuthenticatedDashboardRostersRosterIdRouteImport } from './routes/_authenticated/dashboard/rosters/$rosterId'
+import { Route as AuthenticatedDashboardOrganizationsOrgSlugIndexRouteImport } from './routes/_authenticated/dashboard/organizations/$orgSlug/index'
+import { Route as AuthenticatedDashboardOrganizationsOrgSlugClassIdRouteImport } from './routes/_authenticated/dashboard/organizations/$orgSlug/$classId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -51,20 +52,14 @@ const AuthenticatedDashboardIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedDashboardRouteRoute,
   } as any)
-const AuthenticatedDashboardOrgIdRouteRoute =
-  AuthenticatedDashboardOrgIdRouteRouteImport.update({
-    id: '/$orgId',
-    path: '/$orgId',
-    getParentRoute: () => AuthenticatedDashboardRouteRoute,
-  } as any)
 const AuthenticatedDashboardAutogradingRoute =
   AuthenticatedDashboardAutogradingRouteImport.update({
     id: '/autograding',
     path: '/autograding',
     getParentRoute: () => AuthenticatedDashboardRouteRoute,
   } as any)
-const AuthenticatedDashboardOrganizationsRoute =
-  AuthenticatedDashboardOrganizationsRouteImport.update({
+const AuthenticatedDashboardOrganizationsRouteRoute =
+  AuthenticatedDashboardOrganizationsRouteRouteImport.update({
     id: '/organizations',
     path: '/organizations',
     getParentRoute: () => AuthenticatedDashboardRouteRoute,
@@ -86,17 +81,17 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedDashboardOrgIdIndexRoute =
-  AuthenticatedDashboardOrgIdIndexRouteImport.update({
+const AuthenticatedDashboardOrganizationsIndexRoute =
+  AuthenticatedDashboardOrganizationsIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => AuthenticatedDashboardOrgIdRouteRoute,
+    getParentRoute: () => AuthenticatedDashboardOrganizationsRouteRoute,
   } as any)
-const AuthenticatedDashboardOrgIdClassIdRoute =
-  AuthenticatedDashboardOrgIdClassIdRouteImport.update({
-    id: '/$classId',
-    path: '/$classId',
-    getParentRoute: () => AuthenticatedDashboardOrgIdRouteRoute,
+const AuthenticatedDashboardOrganizationsOrgSlugRouteRoute =
+  AuthenticatedDashboardOrganizationsOrgSlugRouteRouteImport.update({
+    id: '/$orgSlug',
+    path: '/$orgSlug',
+    getParentRoute: () => AuthenticatedDashboardOrganizationsRouteRoute,
   } as any)
 const AuthenticatedDashboardRostersIndexRoute =
   AuthenticatedDashboardRostersIndexRouteImport.update({
@@ -110,35 +105,48 @@ const AuthenticatedDashboardRostersRosterIdRoute =
     path: '/$rosterId',
     getParentRoute: () => AuthenticatedDashboardRostersRouteRoute,
   } as any)
+const AuthenticatedDashboardOrganizationsOrgSlugIndexRoute =
+  AuthenticatedDashboardOrganizationsOrgSlugIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedDashboardOrganizationsOrgSlugRouteRoute,
+  } as any)
+const AuthenticatedDashboardOrganizationsOrgSlugClassIdRoute =
+  AuthenticatedDashboardOrganizationsOrgSlugClassIdRouteImport.update({
+    id: '/$classId',
+    path: '/$classId',
+    getParentRoute: () => AuthenticatedDashboardOrganizationsOrgSlugRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRouteRouteWithChildren
-  '/dashboard/$orgId': typeof AuthenticatedDashboardOrgIdRouteRouteWithChildren
+  '/dashboard/organizations': typeof AuthenticatedDashboardOrganizationsRouteRouteWithChildren
   '/dashboard/rosters': typeof AuthenticatedDashboardRostersRouteRouteWithChildren
   '/dashboard/autograding': typeof AuthenticatedDashboardAutogradingRoute
-  '/dashboard/organizations': typeof AuthenticatedDashboardOrganizationsRoute
   '/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
-  '/dashboard/$orgId/$classId': typeof AuthenticatedDashboardOrgIdClassIdRoute
+  '/dashboard/organizations/$orgSlug': typeof AuthenticatedDashboardOrganizationsOrgSlugRouteRouteWithChildren
   '/dashboard/rosters/$rosterId': typeof AuthenticatedDashboardRostersRosterIdRoute
-  '/dashboard/$orgId/': typeof AuthenticatedDashboardOrgIdIndexRoute
+  '/dashboard/organizations/': typeof AuthenticatedDashboardOrganizationsIndexRoute
   '/dashboard/rosters/': typeof AuthenticatedDashboardRostersIndexRoute
+  '/dashboard/organizations/$orgSlug/$classId': typeof AuthenticatedDashboardOrganizationsOrgSlugClassIdRoute
+  '/dashboard/organizations/$orgSlug/': typeof AuthenticatedDashboardOrganizationsOrgSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard/autograding': typeof AuthenticatedDashboardAutogradingRoute
-  '/dashboard/organizations': typeof AuthenticatedDashboardOrganizationsRoute
   '/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
-  '/dashboard/$orgId/$classId': typeof AuthenticatedDashboardOrgIdClassIdRoute
   '/dashboard/rosters/$rosterId': typeof AuthenticatedDashboardRostersRosterIdRoute
-  '/dashboard/$orgId': typeof AuthenticatedDashboardOrgIdIndexRoute
+  '/dashboard/organizations': typeof AuthenticatedDashboardOrganizationsIndexRoute
   '/dashboard/rosters': typeof AuthenticatedDashboardRostersIndexRoute
+  '/dashboard/organizations/$orgSlug/$classId': typeof AuthenticatedDashboardOrganizationsOrgSlugClassIdRoute
+  '/dashboard/organizations/$orgSlug': typeof AuthenticatedDashboardOrganizationsOrgSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -146,17 +154,18 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRouteRouteWithChildren
-  '/_authenticated/dashboard/$orgId': typeof AuthenticatedDashboardOrgIdRouteRouteWithChildren
+  '/_authenticated/dashboard/organizations': typeof AuthenticatedDashboardOrganizationsRouteRouteWithChildren
   '/_authenticated/dashboard/rosters': typeof AuthenticatedDashboardRostersRouteRouteWithChildren
   '/_authenticated/dashboard/autograding': typeof AuthenticatedDashboardAutogradingRoute
-  '/_authenticated/dashboard/organizations': typeof AuthenticatedDashboardOrganizationsRoute
   '/_authenticated/dashboard/settings': typeof AuthenticatedDashboardSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
-  '/_authenticated/dashboard/$orgId/$classId': typeof AuthenticatedDashboardOrgIdClassIdRoute
+  '/_authenticated/dashboard/organizations/$orgSlug': typeof AuthenticatedDashboardOrganizationsOrgSlugRouteRouteWithChildren
   '/_authenticated/dashboard/rosters/$rosterId': typeof AuthenticatedDashboardRostersRosterIdRoute
-  '/_authenticated/dashboard/$orgId/': typeof AuthenticatedDashboardOrgIdIndexRoute
+  '/_authenticated/dashboard/organizations/': typeof AuthenticatedDashboardOrganizationsIndexRoute
   '/_authenticated/dashboard/rosters/': typeof AuthenticatedDashboardRostersIndexRoute
+  '/_authenticated/dashboard/organizations/$orgSlug/$classId': typeof AuthenticatedDashboardOrganizationsOrgSlugClassIdRoute
+  '/_authenticated/dashboard/organizations/$orgSlug/': typeof AuthenticatedDashboardOrganizationsOrgSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -164,47 +173,49 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/dashboard'
-    | '/dashboard/$orgId'
+    | '/dashboard/organizations'
     | '/dashboard/rosters'
     | '/dashboard/autograding'
-    | '/dashboard/organizations'
     | '/dashboard/settings'
     | '/api/auth/$'
     | '/dashboard/'
-    | '/dashboard/$orgId/$classId'
+    | '/dashboard/organizations/$orgSlug'
     | '/dashboard/rosters/$rosterId'
-    | '/dashboard/$orgId/'
+    | '/dashboard/organizations/'
     | '/dashboard/rosters/'
+    | '/dashboard/organizations/$orgSlug/$classId'
+    | '/dashboard/organizations/$orgSlug/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/dashboard/autograding'
-    | '/dashboard/organizations'
     | '/dashboard/settings'
     | '/api/auth/$'
     | '/dashboard'
-    | '/dashboard/$orgId/$classId'
     | '/dashboard/rosters/$rosterId'
-    | '/dashboard/$orgId'
+    | '/dashboard/organizations'
     | '/dashboard/rosters'
+    | '/dashboard/organizations/$orgSlug/$classId'
+    | '/dashboard/organizations/$orgSlug'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/login'
     | '/_authenticated/dashboard'
-    | '/_authenticated/dashboard/$orgId'
+    | '/_authenticated/dashboard/organizations'
     | '/_authenticated/dashboard/rosters'
     | '/_authenticated/dashboard/autograding'
-    | '/_authenticated/dashboard/organizations'
     | '/_authenticated/dashboard/settings'
     | '/api/auth/$'
     | '/_authenticated/dashboard/'
-    | '/_authenticated/dashboard/$orgId/$classId'
+    | '/_authenticated/dashboard/organizations/$orgSlug'
     | '/_authenticated/dashboard/rosters/$rosterId'
-    | '/_authenticated/dashboard/$orgId/'
+    | '/_authenticated/dashboard/organizations/'
     | '/_authenticated/dashboard/rosters/'
+    | '/_authenticated/dashboard/organizations/$orgSlug/$classId'
+    | '/_authenticated/dashboard/organizations/$orgSlug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -251,13 +262,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardIndexRouteImport
       parentRoute: typeof AuthenticatedDashboardRouteRoute
     }
-    '/_authenticated/dashboard/$orgId': {
-      id: '/_authenticated/dashboard/$orgId'
-      path: '/$orgId'
-      fullPath: '/dashboard/$orgId'
-      preLoaderRoute: typeof AuthenticatedDashboardOrgIdRouteRouteImport
-      parentRoute: typeof AuthenticatedDashboardRouteRoute
-    }
     '/_authenticated/dashboard/autograding': {
       id: '/_authenticated/dashboard/autograding'
       path: '/autograding'
@@ -269,7 +273,7 @@ declare module '@tanstack/react-router' {
       id: '/_authenticated/dashboard/organizations'
       path: '/organizations'
       fullPath: '/dashboard/organizations'
-      preLoaderRoute: typeof AuthenticatedDashboardOrganizationsRouteImport
+      preLoaderRoute: typeof AuthenticatedDashboardOrganizationsRouteRouteImport
       parentRoute: typeof AuthenticatedDashboardRouteRoute
     }
     '/_authenticated/dashboard/rosters': {
@@ -293,19 +297,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/dashboard/$orgId/': {
-      id: '/_authenticated/dashboard/$orgId/'
+    '/_authenticated/dashboard/organizations/': {
+      id: '/_authenticated/dashboard/organizations/'
       path: '/'
-      fullPath: '/dashboard/$orgId/'
-      preLoaderRoute: typeof AuthenticatedDashboardOrgIdIndexRouteImport
-      parentRoute: typeof AuthenticatedDashboardOrgIdRouteRoute
+      fullPath: '/dashboard/organizations/'
+      preLoaderRoute: typeof AuthenticatedDashboardOrganizationsIndexRouteImport
+      parentRoute: typeof AuthenticatedDashboardOrganizationsRouteRoute
     }
-    '/_authenticated/dashboard/$orgId/$classId': {
-      id: '/_authenticated/dashboard/$orgId/$classId'
-      path: '/$classId'
-      fullPath: '/dashboard/$orgId/$classId'
-      preLoaderRoute: typeof AuthenticatedDashboardOrgIdClassIdRouteImport
-      parentRoute: typeof AuthenticatedDashboardOrgIdRouteRoute
+    '/_authenticated/dashboard/organizations/$orgSlug': {
+      id: '/_authenticated/dashboard/organizations/$orgSlug'
+      path: '/$orgSlug'
+      fullPath: '/dashboard/organizations/$orgSlug'
+      preLoaderRoute: typeof AuthenticatedDashboardOrganizationsOrgSlugRouteRouteImport
+      parentRoute: typeof AuthenticatedDashboardOrganizationsRouteRoute
     }
     '/_authenticated/dashboard/rosters/': {
       id: '/_authenticated/dashboard/rosters/'
@@ -321,25 +325,57 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRostersRosterIdRouteImport
       parentRoute: typeof AuthenticatedDashboardRostersRouteRoute
     }
+    '/_authenticated/dashboard/organizations/$orgSlug/': {
+      id: '/_authenticated/dashboard/organizations/$orgSlug/'
+      path: '/'
+      fullPath: '/dashboard/organizations/$orgSlug/'
+      preLoaderRoute: typeof AuthenticatedDashboardOrganizationsOrgSlugIndexRouteImport
+      parentRoute: typeof AuthenticatedDashboardOrganizationsOrgSlugRouteRoute
+    }
+    '/_authenticated/dashboard/organizations/$orgSlug/$classId': {
+      id: '/_authenticated/dashboard/organizations/$orgSlug/$classId'
+      path: '/$classId'
+      fullPath: '/dashboard/organizations/$orgSlug/$classId'
+      preLoaderRoute: typeof AuthenticatedDashboardOrganizationsOrgSlugClassIdRouteImport
+      parentRoute: typeof AuthenticatedDashboardOrganizationsOrgSlugRouteRoute
+    }
   }
 }
 
-interface AuthenticatedDashboardOrgIdRouteRouteChildren {
-  AuthenticatedDashboardOrgIdClassIdRoute: typeof AuthenticatedDashboardOrgIdClassIdRoute
-  AuthenticatedDashboardOrgIdIndexRoute: typeof AuthenticatedDashboardOrgIdIndexRoute
+interface AuthenticatedDashboardOrganizationsOrgSlugRouteRouteChildren {
+  AuthenticatedDashboardOrganizationsOrgSlugClassIdRoute: typeof AuthenticatedDashboardOrganizationsOrgSlugClassIdRoute
+  AuthenticatedDashboardOrganizationsOrgSlugIndexRoute: typeof AuthenticatedDashboardOrganizationsOrgSlugIndexRoute
 }
 
-const AuthenticatedDashboardOrgIdRouteRouteChildren: AuthenticatedDashboardOrgIdRouteRouteChildren =
+const AuthenticatedDashboardOrganizationsOrgSlugRouteRouteChildren: AuthenticatedDashboardOrganizationsOrgSlugRouteRouteChildren =
   {
-    AuthenticatedDashboardOrgIdClassIdRoute:
-      AuthenticatedDashboardOrgIdClassIdRoute,
-    AuthenticatedDashboardOrgIdIndexRoute:
-      AuthenticatedDashboardOrgIdIndexRoute,
+    AuthenticatedDashboardOrganizationsOrgSlugClassIdRoute:
+      AuthenticatedDashboardOrganizationsOrgSlugClassIdRoute,
+    AuthenticatedDashboardOrganizationsOrgSlugIndexRoute:
+      AuthenticatedDashboardOrganizationsOrgSlugIndexRoute,
   }
 
-const AuthenticatedDashboardOrgIdRouteRouteWithChildren =
-  AuthenticatedDashboardOrgIdRouteRoute._addFileChildren(
-    AuthenticatedDashboardOrgIdRouteRouteChildren,
+const AuthenticatedDashboardOrganizationsOrgSlugRouteRouteWithChildren =
+  AuthenticatedDashboardOrganizationsOrgSlugRouteRoute._addFileChildren(
+    AuthenticatedDashboardOrganizationsOrgSlugRouteRouteChildren,
+  )
+
+interface AuthenticatedDashboardOrganizationsRouteRouteChildren {
+  AuthenticatedDashboardOrganizationsOrgSlugRouteRoute: typeof AuthenticatedDashboardOrganizationsOrgSlugRouteRouteWithChildren
+  AuthenticatedDashboardOrganizationsIndexRoute: typeof AuthenticatedDashboardOrganizationsIndexRoute
+}
+
+const AuthenticatedDashboardOrganizationsRouteRouteChildren: AuthenticatedDashboardOrganizationsRouteRouteChildren =
+  {
+    AuthenticatedDashboardOrganizationsOrgSlugRouteRoute:
+      AuthenticatedDashboardOrganizationsOrgSlugRouteRouteWithChildren,
+    AuthenticatedDashboardOrganizationsIndexRoute:
+      AuthenticatedDashboardOrganizationsIndexRoute,
+  }
+
+const AuthenticatedDashboardOrganizationsRouteRouteWithChildren =
+  AuthenticatedDashboardOrganizationsRouteRoute._addFileChildren(
+    AuthenticatedDashboardOrganizationsRouteRouteChildren,
   )
 
 interface AuthenticatedDashboardRostersRouteRouteChildren {
@@ -361,24 +397,21 @@ const AuthenticatedDashboardRostersRouteRouteWithChildren =
   )
 
 interface AuthenticatedDashboardRouteRouteChildren {
-  AuthenticatedDashboardOrgIdRouteRoute: typeof AuthenticatedDashboardOrgIdRouteRouteWithChildren
+  AuthenticatedDashboardOrganizationsRouteRoute: typeof AuthenticatedDashboardOrganizationsRouteRouteWithChildren
   AuthenticatedDashboardRostersRouteRoute: typeof AuthenticatedDashboardRostersRouteRouteWithChildren
   AuthenticatedDashboardAutogradingRoute: typeof AuthenticatedDashboardAutogradingRoute
-  AuthenticatedDashboardOrganizationsRoute: typeof AuthenticatedDashboardOrganizationsRoute
   AuthenticatedDashboardSettingsRoute: typeof AuthenticatedDashboardSettingsRoute
   AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
 }
 
 const AuthenticatedDashboardRouteRouteChildren: AuthenticatedDashboardRouteRouteChildren =
   {
-    AuthenticatedDashboardOrgIdRouteRoute:
-      AuthenticatedDashboardOrgIdRouteRouteWithChildren,
+    AuthenticatedDashboardOrganizationsRouteRoute:
+      AuthenticatedDashboardOrganizationsRouteRouteWithChildren,
     AuthenticatedDashboardRostersRouteRoute:
       AuthenticatedDashboardRostersRouteRouteWithChildren,
     AuthenticatedDashboardAutogradingRoute:
       AuthenticatedDashboardAutogradingRoute,
-    AuthenticatedDashboardOrganizationsRoute:
-      AuthenticatedDashboardOrganizationsRoute,
     AuthenticatedDashboardSettingsRoute: AuthenticatedDashboardSettingsRoute,
     AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
   }
