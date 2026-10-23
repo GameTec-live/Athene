@@ -22,6 +22,7 @@ import {
 } from "#/components/ui/sidebar.tsx";
 import { authClient } from "#/lib/auth-client";
 import { Spinner } from "./ui/spinner";
+import { toast } from "./ui/toast";
 
 export function NavUser() {
     const { isMobile } = useSidebar();
@@ -113,6 +114,12 @@ export function NavUser() {
                                             onSuccess: () => {
                                                 router.navigate({
                                                     to: "/",
+                                                });
+                                            },
+                                            onError: () => {
+                                                toast.add({
+                                                    title: "Error signing out",
+                                                    type: "error",
                                                 });
                                             },
                                         },
