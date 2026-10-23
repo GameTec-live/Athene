@@ -45,6 +45,14 @@ export async function createForgejoOrganization(
                 );
             }
         }
+
+        // Create teachers team on org with "All repositories" and "Create repositories"
+        await api.orgs.orgCreateTeam(slug, {
+            name: "teachers",
+            permission: "admin",
+            includes_all_repositories: true,
+            can_create_org_repo: true,
+        });
     } catch (error) {
         // Roll back this new, empty organization if ownership setup fails.
         try {
