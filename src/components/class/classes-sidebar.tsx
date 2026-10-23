@@ -1,8 +1,8 @@
 import { linkOptions, useLoaderData, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
+import { SidebarList } from "../sidebar-list";
 import { CreateClassDialog } from "./create-class-dialog";
 import { EditClassDialog } from "./edit-class-dialog";
-import { SidebarList } from "./sidebar-list";
 
 export function ClassesSidebar({
     orgSlug,

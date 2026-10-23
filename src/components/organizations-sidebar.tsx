@@ -1,11 +1,13 @@
 import { Await, linkOptions, useLoaderData } from "@tanstack/react-router";
 import { useState } from "react";
 import type { Organization } from "#/lib/forgejo/api";
+import { CreateOrganizationDialog } from "./create-organization-dialog";
 import { SidebarList } from "./sidebar-list";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 
 export function OrganizationsSidebar({ orgSlug }: { orgSlug?: string }) {
     const [search, setSearch] = useState("");
+    const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const data = useLoaderData({
         from: "/_authenticated/dashboard/organizations",
     });
@@ -20,7 +22,7 @@ export function OrganizationsSidebar({ orgSlug }: { orgSlug?: string }) {
                 search={search}
                 onSearchChange={setSearch}
                 emptyMessage="You are not a member of any organizations."
-                onCreateNew={() => {}}
+                onCreateNew={() => setCreateDialogOpen(true)}
                 items={slugs.map((slug, index) => ({
                     id: slug,
                     name:
@@ -49,8 +51,14 @@ export function OrganizationsSidebar({ orgSlug }: { orgSlug?: string }) {
     }
 
     return (
-        <Await promise={details} fallback={renderList([])}>
-            {renderList}
-        </Await>
+        <>
+            <Await promise={details} fallback={renderList([])}>
+                {renderList}
+            </Await>
+            <CreateOrganizationDialog
+                open={createDialogOpen}
+                onOpenChange={setCreateDialogOpen}
+            />
+        </>
     );
 }

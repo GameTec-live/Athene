@@ -3,7 +3,7 @@ import { useRouter } from "@tanstack/react-router";
 import * as v from "valibot";
 import { createClass } from "#/lib/classes.functions";
 import { classNameSchema } from "#/lib/common-schemas";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import {
     Dialog,
     DialogClose,
@@ -12,10 +12,10 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "./ui/dialog";
-import { Field, FieldError, FieldGroup, FieldLabel } from "./ui/field";
-import { Input } from "./ui/input";
-import { toast } from "./ui/toast";
+} from "../ui/dialog";
+import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
+import { Input } from "../ui/input";
+import { toast } from "../ui/toast";
 
 export function CreateClassDialog({
     orgSlug,
