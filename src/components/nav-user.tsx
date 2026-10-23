@@ -1,11 +1,5 @@
-import {
-    BadgeCheckIcon,
-    BellIcon,
-    ChevronsUpDownIcon,
-    CreditCardIcon,
-    LogOutIcon,
-    SparklesIcon,
-} from "lucide-react";
+import { useRouter } from "@tanstack/react-router";
+import { ChevronsUpDownIcon, LogOutIcon } from "lucide-react";
 import {
     Avatar,
     AvatarFallback,
@@ -28,11 +22,13 @@ import {
 } from "#/components/ui/sidebar.tsx";
 import { authClient } from "#/lib/auth-client";
 import { Spinner } from "./ui/spinner";
+import { toast } from "./ui/toast";
 
 export function NavUser() {
     const { isMobile } = useSidebar();
 
     const { data: session, isPending, error } = authClient.useSession();
+    const router = useRouter();
 
     if (isPending) {
         return (
@@ -111,29 +107,25 @@ export function NavUser() {
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuGroup>
-                                <DropdownMenuItem>
-                                    <SparklesIcon />
-                                    Upgrade to Pro
-                                </DropdownMenuItem>
-                            </DropdownMenuGroup>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuGroup>
-                                <DropdownMenuItem>
-                                    <BadgeCheckIcon />
-                                    Account
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                    <CreditCardIcon />
-                                    Billing
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                    <BellIcon />
-                                    Notifications
-                                </DropdownMenuItem>
-                            </DropdownMenuGroup>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={() =>
+                                    authClient.signOut({
+                                        fetchOptions: {
+                                            onSuccess: () => {
+                                                router.navigate({
+                                                    to: "/",
+                                                });
+                                            },
+                                            onError: () => {
+                                                toast.add({
+                                                    title: "Error signing out",
+                                                    type: "error",
+                                                });
+                                            },
+                                        },
+                                    })
+                                }
+                            >
                                 <LogOutIcon />
                                 Log out
                             </DropdownMenuItem>
