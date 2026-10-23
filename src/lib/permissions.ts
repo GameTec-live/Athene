@@ -16,3 +16,8 @@ export const adminRole = ac.newRole({
 export const teacherRole = ac.newRole({
     siteAccess: ["dashboard"],
 });
+
+export const roles = {
+    admin: adminRole,
+    teacher: teacherRole,
+};

@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { authMiddleware } from "#/lib/auth.functions";
+import { dashboardMiddleware } from "#/lib/auth.functions";
 import { createOrganizationSchema } from "#/lib/common-schemas";
 import { createForgejoOrganization } from "./create-org.server";
 import {
@@ -9,7 +9,7 @@ import {
 } from "./orgs.server";
 
 export const createOrganization = createServerFn({ method: "POST" })
-    .middleware([authMiddleware])
+    .middleware([dashboardMiddleware])
     .validator(createOrganizationSchema)
     .handler(async ({ data }) => {
         const username = await getForgejoUsername();
@@ -22,7 +22,7 @@ export const createOrganization = createServerFn({ method: "POST" })
 
 /** Fetches all organizations the user has access to */
 export const getOrganizations = createServerFn({ method: "GET" })
-    .middleware([authMiddleware])
+    .middleware([dashboardMiddleware])
     .handler(async () => {
         const slugs = await getOrganizationSlugs();
         return {

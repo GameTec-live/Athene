@@ -23,3 +23,18 @@ export const authMiddleware = createMiddleware({ type: "function" }).server(
         return next({ context: { user: session.user } });
     },
 );
+
+/** Dashboard operations require this in addition to any resource access checks. */
+export const dashboardMiddleware = createMiddleware({ type: "function" })
+    .middleware([authMiddleware])
+    .server(async ({ next }) => {
+        const { success } = await auth.api.userHasPermission({
+            headers: getRequestHeaders(),
+            body: { permissions: { siteAccess: ["dashboard"] } },
+        });
+        if (!success) {
+            setResponseStatus(403);
+            throw new Error("Dashboard permission required");
+        }
+        return next();
+    });

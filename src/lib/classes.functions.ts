@@ -4,12 +4,12 @@ import { and, asc, eq } from "drizzle-orm";
 import * as v from "valibot";
 import { db } from "#/db";
 import { classRoom } from "#/db/schema";
-import { authMiddleware } from "./auth.functions";
+import { dashboardMiddleware } from "./auth.functions";
 import { classNameSchema, orgSlugSchema } from "./common-schemas";
 import { requireOrganizationAccess } from "./forgejo/orgs.server";
 
 export const getOrganizationClasses = createServerFn({ method: "GET" })
-    .middleware([authMiddleware])
+    .middleware([dashboardMiddleware])
     .validator(
         v.object({
             orgSlug: orgSlugSchema,
@@ -26,7 +26,7 @@ export const getOrganizationClasses = createServerFn({ method: "GET" })
     });
 
 export const getClass = createServerFn({ method: "GET" })
-    .middleware([authMiddleware])
+    .middleware([dashboardMiddleware])
     .validator(
         v.object({
             classId: v.pipe(v.string(), v.uuid()),
@@ -43,7 +43,7 @@ export const getClass = createServerFn({ method: "GET" })
     });
 
 export const createClass = createServerFn({ method: "POST" })
-    .middleware([authMiddleware])
+    .middleware([dashboardMiddleware])
     .validator(
         v.object({
             orgSlug: orgSlugSchema,
@@ -63,7 +63,7 @@ export const createClass = createServerFn({ method: "POST" })
     });
 
 export const updateClass = createServerFn({ method: "POST" })
-    .middleware([authMiddleware])
+    .middleware([dashboardMiddleware])
     .validator(
         v.object({
             orgSlug: orgSlugSchema,
@@ -88,7 +88,7 @@ export const updateClass = createServerFn({ method: "POST" })
     });
 
 export const deleteClass = createServerFn({ method: "POST" })
-    .middleware([authMiddleware])
+    .middleware([dashboardMiddleware])
     .validator(
         v.object({
             orgSlug: orgSlugSchema,
