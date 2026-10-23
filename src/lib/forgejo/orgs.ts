@@ -19,7 +19,8 @@ export const createOrganization = createServerFn({ method: "POST" })
                 visibility: data.visibility,
                 repo_admin_change_team_access: data.repoAdminChangeTeamAccess,
             });
-        } catch {
+        } catch (error) {
+            console.error("Failed to create organization", error);
             return {
                 success: false as const,
                 error: "Unable to create the organization. Please try again.",
