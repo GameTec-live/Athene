@@ -1,5 +1,11 @@
-import type { CreateOrgOption } from "./api";
+import * as v from "valibot";
+import type { CreateOrgOption, Organization } from "./api";
 import { api } from "./forgejo-api";
+
+const creationErrorSchema = v.object({
+    status: v.number(),
+    error: v.nullish(v.object({ message: v.optional(v.string()) })),
+});
 
 /** Creates an organization with the UI user as its owner. */
 export async function createForgejoOrganization(
@@ -10,7 +16,31 @@ export async function createForgejoOrganization(
     if (!tokenUser.login)
         throw new Error("Invalid Forgejo token user response");
 
-    const { data: organization } = await api.orgs.orgCreate(options);
+    let organization: Organization;
+    try {
+        ({ data: organization } = await api.orgs.orgCreate(options));
+    } catch (cause) {
+        const result = v.safeParse(creationErrorSchema, cause);
+        if (!result.success) throw cause;
+        const { status, error } = result.output;
+        if (
+            status === 409 ||
+            (status === 422 &&
+                error?.message?.startsWith("user already exists"))
+        ) {
+            return {
+                success: false as const,
+                error: "This organization name is already taken. Choose a different name.",
+            };
+        }
+        if (status === 422) {
+            return {
+                success: false as const,
+                error: "This organization name is not allowed. Choose a different name.",
+            };
+        }
+        throw cause;
+    }
     const slug = encodeURIComponent(options.username);
 
     try {
@@ -66,5 +96,5 @@ export async function createForgejoOrganization(
         throw error;
     }
 
-    return organization;
+    return { success: true as const, organization };
 }

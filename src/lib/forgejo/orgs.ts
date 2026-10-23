@@ -12,12 +12,19 @@ export const createOrganization = createServerFn({ method: "POST" })
     .middleware([dashboardMiddleware])
     .validator(createOrganizationSchema)
     .handler(async ({ data }) => {
-        const username = await getForgejoUsername();
-        return createForgejoOrganization(username, {
-            username: data.name,
-            visibility: data.visibility,
-            repo_admin_change_team_access: data.repoAdminChangeTeamAccess,
-        });
+        try {
+            const username = await getForgejoUsername();
+            return await createForgejoOrganization(username, {
+                username: data.name,
+                visibility: data.visibility,
+                repo_admin_change_team_access: data.repoAdminChangeTeamAccess,
+            });
+        } catch {
+            return {
+                success: false as const,
+                error: "Unable to create the organization. Please try again.",
+            };
+        }
     });
 
 /** Fetches all organizations the user has access to */

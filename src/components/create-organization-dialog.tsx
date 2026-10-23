@@ -67,7 +67,15 @@ function CreateOrganizationForm({ onCreated }: { onCreated: () => void }) {
         validators: { onSubmit: createOrganizationSchema },
         onSubmit: async ({ value }) => {
             try {
-                await createOrganization({ data: value });
+                const result = await createOrganization({ data: value });
+                if (!result.success) {
+                    toast.add({
+                        title: "Failed to create organization",
+                        description: result.error,
+                        type: "error",
+                    });
+                    return;
+                }
             } catch {
                 toast.add({
                     title: "Failed to create organization",
