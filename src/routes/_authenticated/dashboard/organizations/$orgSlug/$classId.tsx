@@ -1,16 +1,21 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { getClass } from "#/lib/classes.functions";
+import {
+    createFileRoute,
+    notFound,
+    useLoaderData,
+} from "@tanstack/react-router";
 
 export const Route = createFileRoute(
     "/_authenticated/dashboard/organizations/$orgSlug/$classId",
 )({
-    loader: async ({ params }) => {
-        return await getClass({ data: { classId: params.classId } });
-    },
     component: ClassContent,
 });
 
 function ClassContent() {
-    const classroom = Route.useLoaderData();
+    const { classId } = Route.useParams();
+    const { classes } = useLoaderData({
+        from: "/_authenticated/dashboard/organizations/$orgSlug",
+    });
+    const classroom = classes.find((entry) => entry.id === classId);
+    if (!classroom) throw notFound();
     return <h1 className="text-xl font-semibold">{classroom.name}</h1>;
 }

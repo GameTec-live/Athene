@@ -62,7 +62,13 @@ export function ClassesSidebar({
                                 params: { orgSlug },
                             });
                         }
-                        await router.invalidate();
+                        await router.invalidate({
+                            filter: (match) =>
+                                match.routeId ===
+                                    "/_authenticated/dashboard/organizations/$orgSlug" &&
+                                match.params.orgSlug === orgSlug,
+                            sync: true,
+                        });
                     }}
                 />
             )}

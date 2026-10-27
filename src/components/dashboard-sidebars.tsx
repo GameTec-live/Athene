@@ -1,6 +1,6 @@
 import { useDashboardNavigation } from "#/lib/dashboard-navigation";
 import { ClassesSidebar } from "./class/classes-sidebar";
-import { OrganizationsSidebar } from "./organizations-sidebar";
+import { OrganizationsSidebar } from "./organization/organizations-sidebar";
 import { RostersSidebar } from "./rosters-sidebar";
 
 export function DashboardSidebars() {

@@ -25,23 +25,6 @@ export const getOrganizationClasses = createServerFn({ method: "GET" })
         return { organization, classes };
     });
 
-export const getClass = createServerFn({ method: "GET" })
-    .middleware([dashboardMiddleware])
-    .validator(
-        v.object({
-            classId: v.pipe(v.string(), v.uuid()),
-        }),
-    )
-    .handler(async ({ data }) => {
-        const [classroom] = await db
-            .select()
-            .from(classRoom)
-            .where(eq(classRoom.id, data.classId));
-        if (!classroom) throw notFound();
-        await requireOrganizationAccess(classroom.organizationId);
-        return classroom;
-    });
-
 export const createClass = createServerFn({ method: "POST" })
     .middleware([dashboardMiddleware])
     .validator(

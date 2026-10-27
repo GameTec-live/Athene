@@ -4,8 +4,8 @@ import { useId } from "react";
 import type * as v from "valibot";
 import { createOrganizationSchema } from "#/lib/common-schemas";
 import { createOrganization } from "#/lib/forgejo/orgs";
-import { Button } from "./ui/button";
-import { Checkbox } from "./ui/checkbox";
+import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
 import {
     Dialog,
     DialogClose,
@@ -14,17 +14,17 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "./ui/dialog";
-import { Field, FieldError, FieldGroup, FieldLabel } from "./ui/field";
-import { Input } from "./ui/input";
+} from "../ui/dialog";
+import { Field, FieldError, FieldGroup, FieldLabel } from "../ui/field";
+import { Input } from "../ui/input";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "./ui/select";
-import { toast } from "./ui/toast";
+} from "../ui/select";
+import { toast } from "../ui/toast";
 
 const visibilityOptions = [
     { value: "public", label: "Public" },
@@ -84,7 +84,11 @@ function CreateOrganizationForm({ onCreated }: { onCreated: () => void }) {
                 return;
             }
             onCreated();
-            await router.invalidate();
+            await router.invalidate({
+                filter: (match) =>
+                    match.routeId === "/_authenticated/dashboard/organizations",
+                sync: true,
+            });
         },
     });
 
