@@ -243,7 +243,7 @@ function CreateOrganizationForm({
                                 }}
                             >
                                 <ComboboxInput
-                                    id={id}
+                                    id={`${id}-quota-group`}
                                     onBlur={field.handleBlur}
                                     placeholder="Search quota groups…"
                                 />
