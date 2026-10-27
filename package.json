@@ -2,6 +2,7 @@
     "name": "athene",
     "private": true,
     "type": "module",
+    "packageManager": "bun@1.4.2",
     "imports": {
         "#/*": "./src/*"
     },
@@ -14,6 +15,7 @@
         "format": "biome format",
         "lint": "biome lint",
         "check": "biome check",
+        "typecheck": "tsc --noEmit",
         "db:generate": "drizzle-kit generate",
         "db:migrate": "drizzle-kit migrate",
         "db:push": "drizzle-kit push",

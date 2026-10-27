@@ -1,0 +1,11 @@
+**
+!package.json
+!bun.lock
+!tsconfig.json
+!tsr.config.json
+!vite.config.ts
+!.gitignore
+!src/
+!src/**
+!public/
+!public/**
