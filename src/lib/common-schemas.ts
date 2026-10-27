@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import { quotaNameSchema } from "./forgejo/quota-schemas";
 
 export const classNameSchema = v.pipe(
     v.string(),
@@ -23,4 +24,5 @@ export const createOrganizationSchema = v.object({
     ),
     visibility: v.picklist(["public", "limited", "private"]),
     repoAdminChangeTeamAccess: v.boolean(),
+    quotaGroup: quotaNameSchema,
 });

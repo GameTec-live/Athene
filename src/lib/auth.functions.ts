@@ -38,3 +38,18 @@ export const dashboardMiddleware = createMiddleware({ type: "function" })
         }
         return next();
     });
+
+/** Requires administrator access for instance-wide settings and operations. */
+export const adminMiddleware = createMiddleware({ type: "function" })
+    .middleware([dashboardMiddleware])
+    .server(async ({ next }) => {
+        const { success } = await auth.api.userHasPermission({
+            headers: getRequestHeaders(),
+            body: { permissions: { siteAccess: ["admin"] } },
+        });
+        if (!success) {
+            setResponseStatus(403);
+            throw new Error("Administrator access required");
+        }
+        return next();
+    });
