@@ -58,7 +58,7 @@ export function AppSidebar({
 
     return (
         <Sidebar collapsible="icon" className="overflow-hidden" {...props}>
-            <div className="flex h-full min-w-0 overflow-x-auto">
+            <div className="flex h-full min-w-0 overflow-x-auto md:overflow-x-hidden">
                 <Sidebar
                     collapsible="none"
                     className="w-[calc(var(--sidebar-width-icon)+1px)]! shrink-0 border-r"
