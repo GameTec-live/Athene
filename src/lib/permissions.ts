@@ -3,14 +3,14 @@ import { adminAc, defaultStatements } from "better-auth/plugins/admin/access";
 
 const statement = {
     ...defaultStatements,
-    siteAccess: ["dashboard"],
+    siteAccess: ["dashboard", "admin"],
 } as const;
 
 export const ac = createAccessControl(statement);
 
 export const adminRole = ac.newRole({
     ...adminAc.statements,
-    siteAccess: ["dashboard"],
+    siteAccess: ["dashboard", "admin"],
 });
 
 export const teacherRole = ac.newRole({

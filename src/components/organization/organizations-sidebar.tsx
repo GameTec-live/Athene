@@ -7,10 +7,11 @@ import { CreateOrganizationDialog } from "./create-organization-dialog";
 export function OrganizationsSidebar({ orgSlug }: { orgSlug?: string }) {
     const [search, setSearch] = useState("");
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
-    const organizations = useLoaderData({
+    const data = useLoaderData({
         from: "/_authenticated/dashboard/organizations",
     });
-    if (!organizations) return null;
+    if (!data) return null;
+    const { organizations, quotaGroups } = data;
 
     return (
         <>
@@ -47,6 +48,7 @@ export function OrganizationsSidebar({ orgSlug }: { orgSlug?: string }) {
                 })}
             />
             <CreateOrganizationDialog
+                quotaGroups={quotaGroups}
                 open={createDialogOpen}
                 onOpenChange={setCreateDialogOpen}
             />

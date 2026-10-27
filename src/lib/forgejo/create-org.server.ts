@@ -1,6 +1,8 @@
 import * as v from "valibot";
 import type { CreateOrgOption, Organization } from "./api";
 import { api } from "./forgejo-api";
+import { UNLIMITED_QUOTA_GROUP } from "./quota-schemas";
+import { ensureUnlimitedGroup } from "./quota-service.server";
 
 const creationErrorSchema = v.object({
     status: v.number(),
@@ -11,7 +13,11 @@ const creationErrorSchema = v.object({
 export async function createForgejoOrganization(
     username: string,
     options: CreateOrgOption,
+    quotaGroup = UNLIMITED_QUOTA_GROUP,
 ) {
+    await ensureUnlimitedGroup();
+    // Validate the selection before creating anything in Forgejo.
+    await api.admin.adminGetQuotaGroup(encodeURIComponent(quotaGroup));
     const { data: tokenUser } = await api.user.userGetCurrent();
     if (!tokenUser.login)
         throw new Error("Invalid Forgejo token user response");
@@ -44,6 +50,7 @@ export async function createForgejoOrganization(
     const slug = encodeURIComponent(options.username);
 
     try {
+        await api.admin.adminSetUserQuotaGroups(slug, { groups: [quotaGroup] });
         // A newly created organization contains only the built-in Owners team.
         const { data: teams } = await api.orgs.orgListTeams(slug);
         const owners = teams.find(
@@ -84,7 +91,7 @@ export async function createForgejoOrganization(
             can_create_org_repo: true,
         });
     } catch (error) {
-        // Roll back this new, empty organization if ownership setup fails.
+        // Roll back this new, empty organization if quota or ownership setup fails.
         try {
             await api.orgs.orgDelete(slug);
         } catch (rollbackError) {

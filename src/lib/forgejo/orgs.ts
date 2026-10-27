@@ -10,11 +10,16 @@ export const createOrganization = createServerFn({ method: "POST" })
     .handler(async ({ data }) => {
         try {
             const username = await getForgejoUsername();
-            return await createForgejoOrganization(username, {
-                username: data.name,
-                visibility: data.visibility,
-                repo_admin_change_team_access: data.repoAdminChangeTeamAccess,
-            });
+            return await createForgejoOrganization(
+                username,
+                {
+                    username: data.name,
+                    visibility: data.visibility,
+                    repo_admin_change_team_access:
+                        data.repoAdminChangeTeamAccess,
+                },
+                data.quotaGroup,
+            );
         } catch (error) {
             console.error("Failed to create organization", error);
             return {

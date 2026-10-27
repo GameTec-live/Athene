@@ -1,4 +1,4 @@
-import { Link, linkOptions } from "@tanstack/react-router";
+import { Link, linkOptions, useRouteContext } from "@tanstack/react-router";
 import {
     BookOpenCheckIcon,
     BuildingIcon,
@@ -19,7 +19,9 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "#/components/ui/sidebar";
+import { authClient } from "#/lib/auth-client";
 import { useDashboardNavigation } from "#/lib/dashboard-navigation";
+import type { roles } from "#/lib/permissions";
 import { NavUser } from "./nav-user";
 
 const navigation = [
@@ -55,6 +57,14 @@ export function AppSidebar({
 }: React.ComponentProps<typeof Sidebar>) {
     const { section } = useDashboardNavigation();
     const { setOpenMobile } = useSidebar();
+    const { session } = useRouteContext({ from: "/_authenticated" });
+    const canManageSettings = authClient.admin.checkRolePermission({
+        role: (session.user.role ?? "user") as keyof typeof roles,
+        permissions: { siteAccess: ["admin"] },
+    });
+    const visibleNavigation = navigation.filter(
+        (item) => item.section !== "settings" || canManageSettings,
+    );
 
     return (
         <Sidebar collapsible="icon" className="overflow-hidden" {...props}>
@@ -87,7 +97,7 @@ export function AppSidebar({
                         <SidebarGroup>
                             <SidebarGroupContent className="px-1.5 md:px-0">
                                 <SidebarMenu>
-                                    {navigation.map((item) => (
+                                    {visibleNavigation.map((item) => (
                                         <SidebarMenuItem key={item.section}>
                                             <SidebarMenuButton
                                                 tooltip={{
