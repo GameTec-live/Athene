@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { UnlinkIcon } from "lucide-react";
 import { Suspense, use, useId, useState, useTransition } from "react";
 import { Button } from "#/components/ui/button";
+import { Empty, EmptyHeader, EmptyTitle } from "#/components/ui/empty";
 import { Field, FieldError, FieldLabel } from "#/components/ui/field";
 import { Input } from "#/components/ui/input";
 import { toast } from "#/components/ui/toast";
@@ -175,49 +176,54 @@ function QuotaMembersContent({
                             onChange={(event) => setSearch(event.target.value)}
                         />
                     )}
-                    <ul className="divide-y rounded-md border">
-                        {filtered.map((member) => (
-                            <li
-                                key={member.login}
-                                className="flex items-center justify-between gap-3 px-3 py-2 text-xs"
-                            >
-                                <span className="min-w-0 wrap-break-word">
-                                    <span className="font-medium">
-                                        {member.login}
-                                    </span>
-                                    {member.fullName && (
-                                        <span className="ml-2 text-muted-foreground">
-                                            {member.fullName}
-                                        </span>
-                                    )}
-                                </span>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    disabled={isSubmitting || pending}
-                                    aria-label={`Remove ${member.login} from ${group}`}
-                                    title="Remove member from this group"
-                                    onClick={() =>
-                                        startTransition(async () => {
-                                            await update(
-                                                member.login,
-                                                "remove",
-                                            );
-                                        })
-                                    }
+                    {filtered.length === 0 ? (
+                        <Empty className="border">
+                            <EmptyHeader>
+                                <EmptyTitle>
+                                    {data.length
+                                        ? "No matching memberships"
+                                        : "No members in this group"}
+                                </EmptyTitle>
+                            </EmptyHeader>
+                        </Empty>
+                    ) : (
+                        <ul className="divide-y rounded-md border">
+                            {filtered.map((member) => (
+                                <li
+                                    key={member.login}
+                                    className="flex items-center justify-between gap-3 px-3 py-2 text-xs"
                                 >
-                                    <UnlinkIcon />
-                                </Button>
-                            </li>
-                        ))}
-                        {filtered.length === 0 && (
-                            <li className="p-3 text-xs text-muted-foreground">
-                                {data.length
-                                    ? "No matching memberships."
-                                    : "No members in this group."}
-                            </li>
-                        )}
-                    </ul>
+                                    <span className="min-w-0 wrap-break-word">
+                                        <span className="font-medium">
+                                            {member.login}
+                                        </span>
+                                        {member.fullName && (
+                                            <span className="ml-2 text-muted-foreground">
+                                                {member.fullName}
+                                            </span>
+                                        )}
+                                    </span>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        disabled={isSubmitting || pending}
+                                        aria-label={`Remove ${member.login} from ${group}`}
+                                        title="Remove member from this group"
+                                        onClick={() =>
+                                            startTransition(async () => {
+                                                await update(
+                                                    member.login,
+                                                    "remove",
+                                                );
+                                            })
+                                        }
+                                    >
+                                        <UnlinkIcon />
+                                    </Button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </section>
             )}
         </form.Subscribe>

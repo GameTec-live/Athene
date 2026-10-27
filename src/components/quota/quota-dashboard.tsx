@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeftIcon } from "lucide-react";
 import { useState } from "react";
+import { Empty, EmptyHeader, EmptyTitle } from "#/components/ui/empty";
 import { Input } from "#/components/ui/input";
 import { UNLIMITED_QUOTA_GROUP } from "#/lib/forgejo/quota-schemas";
 import { Button } from "../ui/button";
@@ -60,9 +61,11 @@ export function QuotaDashboard({
                     />
                 ))}
                 {groups.length === 0 && (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
-                        No matching quota groups.
-                    </p>
+                    <Empty>
+                        <EmptyHeader>
+                            <EmptyTitle>No matching quota groups</EmptyTitle>
+                        </EmptyHeader>
+                    </Empty>
                 )}
             </div>
         </>

@@ -1,6 +1,12 @@
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "#/components/ui/button";
+import {
+    Empty,
+    EmptyDescription,
+    EmptyHeader,
+    EmptyTitle,
+} from "#/components/ui/empty";
 import { UNLIMITED_QUOTA_GROUP } from "#/lib/forgejo/quota-schemas";
 import { QuotaRuleAttach } from "./quota-rule-attach";
 import { QuotaRuleDialog } from "./quota-rule-dialog";
@@ -42,9 +48,14 @@ export function QuotaGroupRules({
                 )}
             </div>
             {!group.rules.length && (
-                <p className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
-                    No rules. Add a rule to allow storage.
-                </p>
+                <Empty className="border">
+                    <EmptyHeader>
+                        <EmptyTitle>No rules</EmptyTitle>
+                        <EmptyDescription>
+                            Add a rule to allow storage.
+                        </EmptyDescription>
+                    </EmptyHeader>
+                </Empty>
             )}
             <div className="space-y-2">
                 {group.rules.map((rule) => (

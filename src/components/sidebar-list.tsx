@@ -1,6 +1,7 @@
 import { Link, type LinkProps } from "@tanstack/react-router";
 import { PencilIcon, PlusIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
+import { Empty, EmptyHeader, EmptyTitle } from "#/components/ui/empty";
 import {
     Sidebar,
     SidebarContent,
@@ -127,9 +128,15 @@ export function SidebarList({
                             </div>
                         ))}
                         {filteredItems.length === 0 && (
-                            <p className="p-4 text-sm text-muted-foreground">
-                                {query ? "No results found." : emptyMessage}
-                            </p>
+                            <Empty>
+                                <EmptyHeader>
+                                    <EmptyTitle>
+                                        {query
+                                            ? "No results found."
+                                            : emptyMessage}
+                                    </EmptyTitle>
+                                </EmptyHeader>
+                            </Empty>
                         )}
                     </SidebarGroupContent>
                 </SidebarGroup>
