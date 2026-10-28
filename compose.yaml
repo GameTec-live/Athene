@@ -1,0 +1,37 @@
+services:
+  athene:
+    image: ${ATHENE_IMAGE:-ghcr.io/gametec-live/athene:latest}
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://athene:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/athene
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in .env}
+      FORGEJO_BASE_URL: ${FORGEJO_BASE_URL:?Set FORGEJO_BASE_URL in .env}
+      VITE_FORGEJO_BASE_URL: ${FORGEJO_BASE_URL}
+      FORGEJO_TOKEN: ${FORGEJO_TOKEN:?Set FORGEJO_TOKEN in .env}
+      FORGEJO_CLIENT_ID: ${FORGEJO_CLIENT_ID:?Set FORGEJO_CLIENT_ID in .env}
+      FORGEJO_CLIENT_SECRET: ${FORGEJO_CLIENT_SECRET:?Set FORGEJO_CLIENT_SECRET in .env}
+      FORGEJO_DISCOVERY_URL: ${FORGEJO_DISCOVERY_URL:?Set FORGEJO_DISCOVERY_URL in .env}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: athene
+      POSTGRES_USER: athene
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U athene -d athene"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

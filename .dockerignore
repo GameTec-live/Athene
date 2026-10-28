@@ -1,0 +1,14 @@
+**
+!package.json
+!bun.lock
+!tsconfig.json
+!tsr.config.json
+!vite.config.ts
+!.gitignore
+!src/
+!src/**
+!drizzle/
+!drizzle/**/
+!drizzle/**/migration.sql
+!public/
+!public/**

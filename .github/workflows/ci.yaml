@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    name: Lint and verify
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bunx --no-install biome ci .
+      - run: bun run typecheck
+
+  docker:
+    name: Docker (${{ matrix.arch }})
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v4
+      - name: Image tags
+        id: image
+        env:
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          image="ghcr.io/${REPOSITORY,,}"
+          tag="sha-${GITHUB_SHA}"
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            tag="pr-${PR_NUMBER}"
+          fi
+          echo "tag=${image}:${tag}-${ARCH}" >> "$GITHUB_OUTPUT"
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build image and archive
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/${{ matrix.arch }}
+          tags: ${{ steps.image.outputs.tag }}
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          outputs: |
+            type=docker,dest=${{ runner.temp }}/athene-${{ matrix.arch }}.tar
+            type=image,push=${{ github.event_name == 'push' }}
+          cache-from: type=gha,scope=athene-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=athene-${{ matrix.arch }}
+          provenance: false
+      - name: Upload image archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: athene-${{ matrix.arch }}
+          path: ${{ runner.temp }}/athene-${{ matrix.arch }}.tar
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish multi-platform image
+    if: github.event_name == 'push'
+    needs: docker
+    runs-on: ubuntu-24.04
+    permissions:
+      packages: write
+    steps:
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish amd64 and arm64 manifest
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          image="ghcr.io/${REPOSITORY,,}"
+          docker buildx imagetools create \
+            --tag "${image}:latest" \
+            --tag "${image}:sha-${GITHUB_SHA}" \
+            "${image}:sha-${GITHUB_SHA}-amd64" \
+            "${image}:sha-${GITHUB_SHA}-arm64"
