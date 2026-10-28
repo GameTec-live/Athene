@@ -7,18 +7,17 @@
         "#/*": "./src/*"
     },
     "scripts": {
-        "dev": "bun run db:migrate && vite dev --port 3000",
+        "dev": "vite dev --port 3000",
         "dev-sec": "infisical run -- bun run dev",
         "generate-routes": "tsr generate",
-        "build": "vite build && bun build --target=bun ./src/bootstrap.ts --outfile .output/start.mjs",
-        "start": "bun .output/start.mjs",
+        "build": "vite build",
         "preview": "vite preview",
         "format": "biome format",
         "lint": "biome lint",
         "check": "biome check",
         "typecheck": "tsc --noEmit",
         "db:generate": "drizzle-kit generate",
-        "db:migrate": "bun src/db/migrate.ts",
+        "db:migrate": "drizzle-kit migrate",
         "db:push": "drizzle-kit push",
         "db:pull": "drizzle-kit pull",
         "db:studio": "drizzle-kit studio"
@@ -41,6 +40,7 @@
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cn": "^0.4.0",
+        "dotenv": "^18.0.4",
         "drizzle-kit": "^1.0.0-rc.4",
         "drizzle-orm": "^1.0.0-rc.4",
         "lucide-react": "^1.48.0",
@@ -64,7 +64,6 @@
         "@types/react": "^19.2.0",
         "@types/react-dom": "^19.2.0",
         "@vitejs/plugin-react": "^6.0.1",
-        "dotenv": "^18.0.4",
         "tsx": "^4.21.0",
         "typescript": "^7.0.2",
         "vite": "^8.0.0"
