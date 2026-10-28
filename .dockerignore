@@ -4,7 +4,6 @@
 !tsconfig.json
 !tsr.config.json
 !vite.config.ts
-!drizzle.config.ts
 !.gitignore
 !src/
 !src/**
