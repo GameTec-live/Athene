@@ -7,17 +7,18 @@
         "#/*": "./src/*"
     },
     "scripts": {
-        "dev": "vite dev --port 3000",
+        "dev": "bun run db:migrate && vite dev --port 3000",
         "dev-sec": "infisical run -- bun run dev",
         "generate-routes": "tsr generate",
         "build": "vite build",
+        "start": "bun run db:migrate && bun .output/server/index.mjs",
         "preview": "vite preview",
         "format": "biome format",
         "lint": "biome lint",
         "check": "biome check",
         "typecheck": "tsc --noEmit",
         "db:generate": "drizzle-kit generate",
-        "db:migrate": "drizzle-kit migrate",
+        "db:migrate": "bun src/db/migrate.ts",
         "db:push": "drizzle-kit push",
         "db:pull": "drizzle-kit pull",
         "db:studio": "drizzle-kit studio"
