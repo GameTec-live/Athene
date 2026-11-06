@@ -1,6 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "#/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "#/components/ui/card";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "#/components/ui/card";
 import { authClient } from "#/lib/auth-client";
 
 function getSafeRedirect(value: unknown) {
@@ -8,7 +14,7 @@ function getSafeRedirect(value: unknown) {
         value.startsWith("/") &&
         !value.startsWith("//")
         ? value
-        : "/";
+        : "/dashboard";
 }
 
 export const Route = createFileRoute("/login")({
@@ -27,10 +33,14 @@ function RouteComponent() {
     return (
         <div className="flex min-h-dvh items-center justify-center bg-background p-6">
             <Card className="w-full max-w-xl gap-8 py-10 [--card-spacing:--spacing(6)] sm:gap-10 sm:py-14 sm:[--card-spacing:--spacing(12)]">
-                <CardHeader className="text-center">
+                <CardHeader className="gap-3 text-center">
                     <CardTitle className="text-3xl font-semibold sm:text-4xl">
-                        Login in to Athene
+                        Sign in to Athene
                     </CardTitle>
+                    <CardDescription>
+                        Use your Forgejo account to continue. Dashboard access
+                        requires a teacher or admin role.
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Button
