@@ -7,11 +7,11 @@ import {
     CardHeader,
     CardTitle,
 } from "#/components/ui/card";
-import { env } from "#/env";
+import { getForgejoBaseUrl } from "#/lib/env.functions";
 
 export const Route = createFileRoute("/")({
     loader: async () => {
-        return env.FORGEJO_BASE_URL;
+        return await getForgejoBaseUrl();
     },
     staleTime: Infinity,
     component: Home,
