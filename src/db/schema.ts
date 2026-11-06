@@ -178,6 +178,11 @@ export const assignment = pgTable(
     "assignment",
     {
         id: uuid("id").primaryKey().defaultRandom(),
+        classRoomId: uuid("classRoomId")
+            .notNull()
+            .references(() => classRoom.id, {
+                onDelete: "cascade",
+            }),
         creatorId: text("creatorId")
             .notNull()
             .references(() => user.id, { onDelete: "set null" }),
@@ -215,6 +220,7 @@ export const assignment = pgTable(
             .notNull(),
     },
     (table) => [
+        index("assignment_classRoomId_idx").on(table.classRoomId),
         index("deadline_idx").on(table.deadline),
         index("joinCode_idx").on(table.joinCode),
     ],
@@ -283,6 +289,10 @@ export const relations = defineRelationsPart(
             }),
         },
         classRoom: {
+            assignments: r.many.assignment({
+                from: r.classRoom.id,
+                to: r.assignment.classRoomId,
+            }),
             members: r.many.classRoomMember({
                 from: r.classRoom.id,
                 to: r.classRoomMember.classRoomId,
@@ -315,6 +325,10 @@ export const relations = defineRelationsPart(
             }),
         },
         assignment: {
+            classRoom: r.one.classRoom({
+                from: r.assignment.classRoomId,
+                to: r.classRoom.id,
+            }),
             members: r.many.assignmentMember({
                 from: r.assignment.id,
                 to: r.assignmentMember.assignmentId,
