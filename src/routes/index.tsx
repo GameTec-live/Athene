@@ -10,10 +10,16 @@ import {
 import { env } from "#/env";
 
 export const Route = createFileRoute("/")({
+    loader: async () => {
+        return env.FORGEJO_BASE_URL;
+    },
+    staleTime: Infinity,
     component: Home,
 });
 
 function Home() {
+    const forgejoBaseUrl = Route.useLoaderData();
+
     return (
         <main className="flex min-h-dvh items-center justify-center bg-background px-6 py-16">
             <div className="w-full max-w-3xl space-y-10">
@@ -61,7 +67,7 @@ function Home() {
                                 nativeButton={false}
                                 variant="outline"
                                 className="w-full"
-                                render={<a href={env.VITE_FORGEJO_BASE_URL} />}
+                                render={<a href={forgejoBaseUrl} />}
                             >
                                 Continue to Forgejo
                             </Button>
