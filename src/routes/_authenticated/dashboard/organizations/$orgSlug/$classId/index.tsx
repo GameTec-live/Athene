@@ -35,7 +35,7 @@ import {
 import { getClassAssignments } from "#/lib/classes.functions";
 
 export const Route = createFileRoute(
-    "/_authenticated/dashboard/organizations/$orgSlug/$classId",
+    "/_authenticated/dashboard/organizations/$orgSlug/$classId/",
 )({
     loader: ({ params }) => getClassAssignments({ data: params }),
     component: ClassContent,
@@ -58,6 +58,7 @@ function ClassAssignments({
     classroom,
     assignments,
 }: Awaited<ReturnType<typeof getClassAssignments>>) {
+    const { orgSlug } = Route.useParams();
     const [search, setSearch] = useState("");
     const query = search.trim().toLowerCase();
     const filteredAssignments = assignments.filter((assignment) =>
@@ -86,7 +87,15 @@ function ClassAssignments({
                     </InputGroupAddon>
                 </InputGroup>
                 <Button
-                    render={<Link to="/dashboard/assignment/new" />}
+                    render={
+                        <Link
+                            to="/dashboard/organizations/$orgSlug/$classId/assignment/new"
+                            params={{
+                                orgSlug,
+                                classId: classroom.id,
+                            }}
+                        />
+                    }
                     nativeButton={false}
                 >
                     New
@@ -99,8 +108,12 @@ function ClassAssignments({
                     {filteredAssignments.map((assignment) => (
                         <li key={assignment.id}>
                             <Link
-                                to="/dashboard/assignment/$id"
-                                params={{ id: assignment.id }}
+                                to="/dashboard/organizations/$orgSlug/$classId/assignment/$assignmentId"
+                                params={{
+                                    orgSlug,
+                                    classId: classroom.id,
+                                    assignmentId: assignment.id,
+                                }}
                             >
                                 <Card>
                                     <CardHeader>

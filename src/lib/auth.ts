@@ -31,6 +31,7 @@ export const auth = betterAuth({
                         "groups",
                         "read:organization",
                     ],
+                    overrideUserInfo: true,
                 },
             ],
         }),
