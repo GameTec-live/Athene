@@ -1,12 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRightIcon, SearchIcon } from "lucide-react";
+import {
+    ArrowRightIcon,
+    SearchIcon,
+    UserGroupIcon,
+    UserIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { AssignmentCapabilityChip } from "#/components/assignment/assignment-capability-chip";
 import { Button } from "#/components/ui/button";
 import {
     Card,
     CardAction,
-    CardContent,
     CardDescription,
     CardFooter,
     CardHeader,
@@ -23,6 +27,11 @@ import {
     InputGroupAddon,
     InputGroupInput,
 } from "#/components/ui/input-group";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from "#/components/ui/tooltip";
 import { getClassAssignments } from "#/lib/classes.functions";
 
 export const Route = createFileRoute(
@@ -108,8 +117,35 @@ function ClassAssignments({
                                             />
                                         </CardAction>
                                     </CardHeader>
-                                    <CardContent>content</CardContent>
-                                    <CardFooter>Foot</CardFooter>
+                                    <CardFooter>
+                                        <div className="flex w-full items-center gap-2 justify-between">
+                                            {assignment.type === "group" ? (
+                                                <Tooltip>
+                                                    <TooltipTrigger>
+                                                        <UserGroupIcon className="h-4 w-4" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        Group assignment
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            ) : (
+                                                <Tooltip>
+                                                    <TooltipTrigger>
+                                                        <UserIcon className="h-4 w-4" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        Individual assignment
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            )}
+                                            {assignment.deadline && (
+                                                <span className="text-sm text-muted-foreground">
+                                                    Due{" "}
+                                                    {assignment.deadline.toLocaleDateString()}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </CardFooter>
                                 </Card>
                             </Link>
                         </li>
