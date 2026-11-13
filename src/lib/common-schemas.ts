@@ -7,6 +7,13 @@ export const classNameSchema = v.pipe(
     v.minLength(1, "Enter a class name."),
 );
 
+export const rosterNameSchema = v.pipe(
+    v.string(),
+    v.trim(),
+    v.minLength(1, "Enter a roster name."),
+    v.maxLength(255, "Roster names must be at most 255 characters."),
+);
+
 export const orgSlugSchema = v.pipe(
     v.string(),
     v.trim(),
