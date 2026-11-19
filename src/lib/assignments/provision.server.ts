@@ -202,8 +202,8 @@ const WRITE_UNITS = {
 };
 
 /**
- * Creates a group's repository and a Forgejo team (named like the
- * repository) that only has access to it, then adds the given members.
+ * Creates a group's repository and a Forgejo team that only has access to
+ * it, then adds the given members.
  */
 export async function provisionGroupRepository(
     ctx: ProvisionContext,
@@ -237,7 +237,9 @@ export async function provisionGroupRepository(
             const { data: team } = await api.orgs.orgCreateTeam(
                 enc(ctx.orgName),
                 {
-                    name: repo.name,
+                    // Teams share a namespace with unrelated org teams (such as
+                    // "Owners"), so the group id keeps the name unique.
+                    name: `${repo.name}-${group.id.slice(0, 8)}`,
                     description: `${ctx.assignment.name}: ${group.name}`,
                     permission,
                     includes_all_repositories: false,
