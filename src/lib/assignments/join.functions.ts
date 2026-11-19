@@ -144,8 +144,9 @@ export const getJoinInfo = createServerFn({ method: "GET" })
         else if (!(await isAllowedByRoster(ctx, userId))) status = "restricted";
         else status = "open";
 
+        // Only the open join view lists groups, so nobody else gets member names.
         const groups =
-            a.type === "group" && status !== "restricted"
+            a.type === "group" && status === "open"
                 ? await db
                       .select({
                           id: assignmentGroup.id,
