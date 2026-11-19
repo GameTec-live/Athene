@@ -51,6 +51,7 @@ export function CreationProgressDialog({
     const finished = state.items.filter(
         (item) => item.status === "done" || item.status === "failed",
     ).length;
+    const created = state.items.filter((item) => item.status === "done").length;
     const failed = state.items.filter((item) => item.status === "failed");
     const total = state.items.length;
 
@@ -74,7 +75,7 @@ export function CreationProgressDialog({
                             : state.phase === "provisioning"
                               ? `Creating repositories: ${finished} of ${total}`
                               : total > 0
-                                ? `${total - failed.length} of ${total} repositories created.`
+                                ? `${created} of ${total} repositories created.`
                                 : "The assignment has been saved."}
                     </DialogDescription>
                 </DialogHeader>
