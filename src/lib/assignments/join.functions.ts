@@ -23,6 +23,7 @@ import {
 import { usesCustomPlaceholder } from "./naming";
 import {
     addGroupTeamMember,
+    describeError,
     type ProvisionContext,
     type ProvisionResult,
     provisionGroupRepository,
@@ -130,9 +131,21 @@ export const getJoinInfo = createServerFn({ method: "GET" })
             : undefined;
         const repositoryName =
             a.type === "group" ? group?.repositoryName : member?.repositoryName;
+        // A member's own error covers failing to join an existing group's team.
+        const provisioningError =
+            (a.type === "group" ? group?.provisioningError : null) ??
+            member?.provisioningError ??
+            null;
+
+        let status: "joined" | "pending" | "open" | "restricted" | "closed";
+        if (repositoryName && !provisioningError) status = "joined";
+        else if (member) status = isClosed(ctx) ? "closed" : "pending";
+        else if (isClosed(ctx)) status = "closed";
+        else if (!(await isAllowedByRoster(ctx, userId))) status = "restricted";
+        else status = "open";
 
         const groups =
-            a.type === "group"
+            a.type === "group" && status !== "restricted"
                 ? await db
                       .select({
                           id: assignmentGroup.id,
@@ -177,13 +190,6 @@ export const getJoinInfo = createServerFn({ method: "GET" })
             }
         }
 
-        let status: "joined" | "pending" | "open" | "restricted" | "closed";
-        if (repositoryName) status = "joined";
-        else if (member) status = isClosed(ctx) ? "closed" : "pending";
-        else if (isClosed(ctx)) status = "closed";
-        else if (!(await isAllowedByRoster(ctx, userId))) status = "restricted";
-        else status = "open";
-
         const needsCustom =
             usesCustomPlaceholder(a.namingTemplate) &&
             (a.type === "group" ? !group?.customName : !member?.customName);
@@ -203,10 +209,7 @@ export const getJoinInfo = createServerFn({ method: "GET" })
                 ? repositoryUrl(ctx.orgName, repositoryName)
                 : null,
             groupName: group?.name ?? null,
-            provisioningError:
-                (a.type === "group"
-                    ? group?.provisioningError
-                    : member?.provisioningError) ?? null,
+            provisioningError,
             groups: groups.map(({ customName, ...g }) => ({
                 ...g,
                 members: membersByGroup.get(g.id) ?? [],
@@ -364,14 +367,26 @@ export const joinAssignment = createServerFn({ method: "POST" })
                 group.forgejoTeamId &&
                 !group.provisioningError
             ) {
+                const memberWhere = and(
+                    eq(assignmentMember.assignmentId, a.id),
+                    eq(assignmentMember.userId, userId),
+                );
                 try {
                     await addGroupTeamMember(group, username);
                 } catch (error) {
                     console.error("Failed to add group member", error);
+                    await db
+                        .update(assignmentMember)
+                        .set({ provisioningError: describeError(error) })
+                        .where(memberWhere);
                     return fail(
                         "You could not be added to your group's repository.",
                     );
                 }
+                await db
+                    .update(assignmentMember)
+                    .set({ provisioningError: null })
+                    .where(memberWhere);
                 return {
                     success: true,
                     repositoryUrl: repositoryUrl(

@@ -35,7 +35,7 @@ function forgejoStatus(error: unknown) {
         : undefined;
 }
 
-function describeError(error: unknown) {
+export function describeError(error: unknown) {
     if (error instanceof Error) return error.message;
     const status = forgejoStatus(error);
     const message =
@@ -76,7 +76,7 @@ export function repoNameFor(
     return name;
 }
 
-/** Creates the repository (from the template if set) and applies feature settings. */
+/** Creates the repository, from the template if one is set. */
 async function createRepository(ctx: ProvisionContext, name: string) {
     const a = ctx.assignment;
     const owner = enc(ctx.orgName);
@@ -102,7 +102,6 @@ async function createRepository(ctx: ProvisionContext, name: string) {
             ({ data: repo } = await api.orgs.createOrgRepo(owner, {
                 name,
                 private: true,
-                auto_init: true,
                 default_branch: "main",
             }));
         }
@@ -113,8 +112,13 @@ async function createRepository(ctx: ProvisionContext, name: string) {
     if (!repo.id || !repo.name) {
         throw new Error("Invalid Forgejo repository response");
     }
+    return { id: repo.id, name: repo.name };
+}
 
-    await api.repos.repoEdit(owner, enc(repo.name), {
+/** Applies the assignment's feature settings; safe to repeat on retries. */
+async function applyFeatures(ctx: ProvisionContext, repoName: string) {
+    const a = ctx.assignment;
+    await api.repos.repoEdit(enc(ctx.orgName), enc(repoName), {
         has_issues: a.afHasIssues,
         has_pull_requests: a.afHasPullRequests,
         has_wiki: a.afHasWiki,
@@ -122,7 +126,6 @@ async function createRepository(ctx: ProvisionContext, name: string) {
         has_releases: a.afHasReleases,
         has_packages: a.afHasPackages,
     });
-    return { id: repo.id, name: repo.name };
 }
 
 export type ProvisionResult =
@@ -158,6 +161,7 @@ export async function provisionMemberRepository(
                 .set({ repositoryId: repo.id, repositoryName: repo.name })
                 .where(where);
         }
+        await applyFeatures(ctx, repo.name);
         await api.repos.repoAddCollaborator(
             enc(ctx.orgName),
             enc(repo.name),
@@ -227,6 +231,7 @@ export async function provisionGroupRepository(
                 .set({ repositoryId: repo.id, repositoryName: repo.name })
                 .where(where);
         }
+        await applyFeatures(ctx, repo.name);
         if (!teamId) {
             const permission = studentPermission(ctx);
             const { data: team } = await api.orgs.orgCreateTeam(

@@ -1,5 +1,5 @@
 import { notFound } from "@tanstack/react-router";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "#/db";
 import { classRoom } from "#/db/schema";
 import { env } from "#/env";
@@ -71,17 +71,29 @@ export function repositoryUrl(orgName: string, repositoryName: string) {
     return `${env.FORGEJO_BASE_URL.replace(/\/+$/, "")}/${encodeURIComponent(orgName)}/${encodeURIComponent(repositoryName)}`;
 }
 
+const provisioningLocks = new Map<string, Promise<void>>();
+
 /**
- * Serializes provisioning of one repository across concurrent requests. The
- * transaction only holds the advisory lock; work inside uses its own queries.
+ * Serializes provisioning of one repository across concurrent requests.
+ * In-process because Athene runs as a single server: a database lock would
+ * hold a pooled connection while the work inside needs another one, so a
+ * burst of joins could exhaust the pool.
  */
-export function withProvisioningLock<T>(key: string, task: () => Promise<T>) {
-    return db.transaction(async (tx) => {
-        await tx.execute(
-            sql`select pg_advisory_xact_lock(hashtext(${`athene:provision:${key}`}))`,
-        );
-        return task();
-    });
+export async function withProvisioningLock<T>(
+    key: string,
+    task: () => Promise<T>,
+): Promise<T> {
+    const run = (provisioningLocks.get(key) ?? Promise.resolve()).then(task);
+    const tail = run.then(
+        () => {},
+        () => {},
+    );
+    provisioningLocks.set(key, tail);
+    try {
+        return await run;
+    } finally {
+        if (provisioningLocks.get(key) === tail) provisioningLocks.delete(key);
+    }
 }
 
 export function generateJoinCode() {

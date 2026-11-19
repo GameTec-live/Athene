@@ -290,7 +290,9 @@ export function NewAssignmentForm({
     }
 
     function addStudents(added: ForgejoStudent[]) {
-        const present = new Set(values.students.map((s) => s.forgejoId));
+        // Read the live state: a roster import resolves after later edits.
+        const current = form.state.values.students;
+        const present = new Set(current.map((s) => s.forgejoId));
         const fresh = added.filter((s) => !present.has(s.forgejoId));
         setStudents((previous) => {
             const next = new Map(previous);
@@ -298,7 +300,7 @@ export function NewAssignmentForm({
             return next;
         });
         set("students", [
-            ...values.students,
+            ...current,
             ...fresh.map((s) => ({ forgejoId: s.forgejoId, group: null })),
         ]);
         return fresh.length;

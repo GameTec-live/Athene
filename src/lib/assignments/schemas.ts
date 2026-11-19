@@ -212,7 +212,11 @@ export const assignmentFormSchema = v.pipe(
     ),
     v.forward(
         v.check((input) => {
-            if (input.type !== "group" || input.maxGroupMembers === 0) {
+            if (
+                input.type !== "group" ||
+                input.groupNaming === "student" ||
+                input.maxGroupMembers === 0
+            ) {
                 return true;
             }
             const counts = new Map<number, number>();
