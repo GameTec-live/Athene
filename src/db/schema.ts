@@ -9,6 +9,7 @@ import {
     primaryKey,
     text,
     timestamp,
+    unique,
     uuid,
 } from "drizzle-orm/pg-core";
 
@@ -190,6 +191,8 @@ export const assignment = pgTable(
         type: assignmentTypeEnum("type").notNull(),
         deadline: timestamp("deadline"),
         archiveOnDeadline: boolean("archiveOnDeadline").default(true).notNull(),
+        /** Set once all repositories were archived after the deadline. */
+        archivedAt: timestamp("archivedAt"),
         autogradeId: uuid("autogradeId").references(() => autograde.id, {
             onDelete: "set null",
         }),
@@ -213,6 +216,10 @@ export const assignment = pgTable(
         allowCreatingGroups: boolean("allowCreatingGroups")
             .default(true)
             .notNull(),
+        /** Maximum number of groups; null means unlimited. */
+        maxGroups: integer("maxGroups"),
+        /** Maximum number of members per group; null means unlimited. */
+        maxGroupMembers: integer("maxGroupMembers"),
         createdAt: timestamp("created_at").defaultNow().notNull(),
         updatedAt: timestamp("updated_at")
             .defaultNow()
@@ -226,6 +233,36 @@ export const assignment = pgTable(
     ],
 );
 
+export const assignmentGroup = pgTable(
+    "assignmentGroup",
+    {
+        id: uuid("id").primaryKey().defaultRandom(),
+        assignmentId: uuid("assignmentId")
+            .notNull()
+            .references(() => assignment.id, { onDelete: "cascade" }),
+        name: text("name").notNull(),
+        /** Value substituted for $CUSTOM in the repository name. */
+        customName: text("customName"),
+        repositoryId: integer("repositoryId"),
+        repositoryName: text("repositoryName"),
+        forgejoTeamId: integer("forgejoTeamId"),
+        /** Last provisioning failure, cleared once the repository exists. */
+        provisioningError: text("provisioningError"),
+        createdAt: timestamp("created_at").defaultNow().notNull(),
+        updatedAt: timestamp("updated_at")
+            .defaultNow()
+            .$onUpdate(() => /* @__PURE__ */ new Date())
+            .notNull(),
+    },
+    (table) => [
+        unique("assignmentGroup_assignmentId_name_unique").on(
+            table.assignmentId,
+            table.name,
+        ),
+        index("assignmentGroup_assignmentId_idx").on(table.assignmentId),
+    ],
+);
+
 export const assignmentMember = pgTable(
     "assignmentMember",
     {
@@ -235,9 +272,18 @@ export const assignmentMember = pgTable(
         assignmentId: uuid("assignmentId")
             .notNull()
             .references(() => assignment.id, { onDelete: "cascade" }),
+        /** Set for group assignments; the repository then belongs to the group. */
+        groupId: uuid("groupId").references(() => assignmentGroup.id, {
+            onDelete: "cascade",
+        }),
         autoGradeResult: integer("autoGradeResult"),
         autoGradeResultDetails: json("autoGradeResultDetails"),
         repositoryId: integer("repositoryId"),
+        repositoryName: text("repositoryName"),
+        /** Value substituted for $CUSTOM in the repository name. */
+        customName: text("customName"),
+        /** Last provisioning failure, cleared once the repository exists. */
+        provisioningError: text("provisioningError"),
         createdAt: timestamp("created_at").defaultNow().notNull(),
         updatedAt: timestamp("updated_at")
             .defaultNow()
@@ -248,6 +294,7 @@ export const assignmentMember = pgTable(
         primaryKey({ columns: [table.userId, table.assignmentId] }),
         index("assignmentMember_userId_idx").on(table.userId),
         index("assignmentMember_assignmentId_idx").on(table.assignmentId),
+        index("assignmentMember_groupId_idx").on(table.groupId),
     ],
 );
 
@@ -263,6 +310,7 @@ export const relations = defineRelationsPart(
         rosterMember,
         autograde,
         assignment,
+        assignmentGroup,
         assignmentMember,
     },
     (r) => ({
@@ -333,6 +381,20 @@ export const relations = defineRelationsPart(
                 from: r.assignment.id,
                 to: r.assignmentMember.assignmentId,
             }),
+            groups: r.many.assignmentGroup({
+                from: r.assignment.id,
+                to: r.assignmentGroup.assignmentId,
+            }),
+        },
+        assignmentGroup: {
+            assignment: r.one.assignment({
+                from: r.assignmentGroup.assignmentId,
+                to: r.assignment.id,
+            }),
+            members: r.many.assignmentMember({
+                from: r.assignmentGroup.id,
+                to: r.assignmentMember.groupId,
+            }),
         },
         assignmentMember: {
             user: r.one.user({
@@ -342,6 +404,10 @@ export const relations = defineRelationsPart(
             assignment: r.one.assignment({
                 from: r.assignmentMember.assignmentId,
                 to: r.assignment.id,
+            }),
+            group: r.one.assignmentGroup({
+                from: r.assignmentMember.groupId,
+                to: r.assignmentGroup.id,
             }),
         },
     }),
