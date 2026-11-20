@@ -31,12 +31,19 @@ export async function readRosterMembers(rosterId: string) {
             and(eq(account.userId, user.id), eq(account.providerId, "forgejo")),
         )
         .where(eq(rosterMember.rosterId, rosterId));
-    return Promise.all(
-        [...new Map(rows.map((row) => [row.id, row])).values()].map(
-            async (row) => {
+    const uniqueRows = [...new Map(rows.map((row) => [row.id, row])).values()];
+    const members = [];
+    // Enrich saved members in small batches so large rosters cannot flood Forgejo.
+    for (let offset = 0; offset < uniqueRows.length; offset += 5) {
+        const batch = await Promise.all(
+            uniqueRows.slice(offset, offset + 5).map(async (row) => {
                 const match = row.id.startsWith("forgejo:")
                     ? null
-                    : (await searchForgejoEmails(row.email, true))[0];
+                    : (
+                          await searchForgejoEmails(row.email, true).catch(
+                              () => [], // Saved member data remains usable if Forgejo fails.
+                          )
+                      )[0];
                 return {
                     id: row.id,
                     forgejoUserId:
@@ -54,9 +61,11 @@ export async function readRosterMembers(rosterId: string) {
                     email: row.email,
                     addedOn: row.addedOn,
                 };
-            },
-        ),
-    );
+            }),
+        );
+        members.push(...batch);
+    }
+    return members;
 }
 
 export function searchForgejoEmails(query: string, exact = false) {

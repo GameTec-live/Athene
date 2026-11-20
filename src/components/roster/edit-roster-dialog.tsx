@@ -79,7 +79,18 @@ export function EditRosterDialog({
     function handleDelete() {
         startDeleteTransition(async () => {
             try {
-                await deleteRoster({ data: { rosterId: roster.id } });
+                const result = await deleteRoster({
+                    data: { rosterId: roster.id },
+                });
+                if (result.status === "in-use") {
+                    toast.add({
+                        title: "Roster is used by an assignment",
+                        description:
+                            "Remove the roster restriction from its assignments before deleting it.",
+                        type: "error",
+                    });
+                    return;
+                }
             } catch {
                 toast.add({ title: "Failed to delete roster", type: "error" });
                 return;

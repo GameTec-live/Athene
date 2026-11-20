@@ -3,7 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { and, asc, eq } from "drizzle-orm";
 import * as v from "valibot";
 import { db } from "#/db";
-import { roster, rosterMember } from "#/db/schema";
+import { assignment, roster, rosterMember } from "#/db/schema";
 import { dashboardMiddleware } from "./auth.functions";
 import { rosterNameSchema } from "./common-schemas";
 import {
@@ -57,12 +57,23 @@ export const deleteRoster = createServerFn({ method: "POST" })
     .middleware([dashboardMiddleware])
     .validator(rosterSchema)
     .handler(async ({ data }) => {
-        const [group] = await db
-            .delete(roster)
-            .where(eq(roster.id, data.rosterId))
-            .returning();
-        if (!group) throw notFound();
-        return group;
+        return db.transaction(async (tx) => {
+            // Block new assignment references until the check and delete finish.
+            const [group] = await tx
+                .select({ id: roster.id })
+                .from(roster)
+                .where(eq(roster.id, data.rosterId))
+                .for("update");
+            if (!group) throw notFound();
+            const [referencingAssignment] = await tx
+                .select({ id: assignment.id })
+                .from(assignment)
+                .where(eq(assignment.rosterRestriction, data.rosterId))
+                .limit(1);
+            if (referencingAssignment) return { status: "in-use" as const };
+            await tx.delete(roster).where(eq(roster.id, data.rosterId));
+            return { status: "deleted" as const };
+        });
     });
 
 export const getRoster = createServerFn({ method: "GET" })
