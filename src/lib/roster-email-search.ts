@@ -8,12 +8,14 @@ export async function findRosterEmails(
     search: SearchEmails,
     query: string,
     exact = false,
+    signal?: AbortSignal,
 ): Promise<EmailMatch[]> {
     const matches: EmailMatch[] = [];
     for (let page = 1; ; page++) {
+        signal?.throwIfAborted();
         const { data } = await search(
             { q: query, page, limit: 50 },
-            { signal: AbortSignal.timeout(10_000) },
+            { signal: signal ?? AbortSignal.timeout(10_000) },
         );
         for (const entry of data) {
             if (

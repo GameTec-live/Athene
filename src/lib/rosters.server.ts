@@ -32,44 +32,49 @@ export async function readRosterMembers(rosterId: string) {
         )
         .where(eq(rosterMember.rosterId, rosterId));
     const uniqueRows = [...new Map(rows.map((row) => [row.id, row])).values()];
-    const members = [];
-    // Enrich saved members in small batches so large rosters cannot flood Forgejo.
+    const members = uniqueRows.map((row) => ({
+        id: row.id,
+        forgejoUserId: row.id.startsWith("forgejo:")
+            ? Number(row.id.slice(8))
+            : row.accountId
+              ? Number(row.accountId)
+              : null,
+        username: row.username,
+        name: null as string | null,
+        email: row.email,
+        addedOn: row.addedOn,
+    }));
+    // All optional lookups share one deadline, regardless of the roster size.
+    const signal = AbortSignal.timeout(2_000);
     for (let offset = 0; offset < uniqueRows.length; offset += 5) {
-        const batch = await Promise.all(
-            uniqueRows.slice(offset, offset + 5).map(async (row) => {
-                const match = row.id.startsWith("forgejo:")
-                    ? null
-                    : (
-                          await searchForgejoEmails(row.email, true).catch(
-                              () => [], // Saved member data remains usable if Forgejo fails.
-                          )
-                      )[0];
-                return {
-                    id: row.id,
-                    forgejoUserId:
-                        match?.user_id ??
-                        (row.id.startsWith("forgejo:")
-                            ? Number(row.id.slice(8))
-                            : row.accountId
-                              ? Number(row.accountId)
-                              : null),
-                    username: match?.username ?? row.username,
-                    name:
-                        match && match.username !== row.username
-                            ? row.username
-                            : null,
-                    email: row.email,
-                    addedOn: row.addedOn,
+        if (signal.aborted) break;
+        await Promise.all(
+            uniqueRows.slice(offset, offset + 5).map(async (row, index) => {
+                if (row.id.startsWith("forgejo:")) return;
+                const [match] = await searchForgejoEmails(
+                    row.email,
+                    true,
+                    signal,
+                ).catch(() => []); // Keep saved data if Forgejo fails or the deadline expires.
+                if (!match || signal.aborted) return;
+                members[offset + index] = {
+                    ...members[offset + index],
+                    forgejoUserId: match.user_id,
+                    username: match.username,
+                    name: match.username !== row.username ? row.username : null,
                 };
             }),
         );
-        members.push(...batch);
     }
     return members;
 }
 
-export function searchForgejoEmails(query: string, exact = false) {
-    return findRosterEmails(api.admin.adminSearchEmails, query, exact);
+export function searchForgejoEmails(
+    query: string,
+    exact = false,
+    signal?: AbortSignal,
+) {
+    return findRosterEmails(api.admin.adminSearchEmails, query, exact, signal);
 }
 
 export async function addRosterEmail(rosterId: string, email: string) {
