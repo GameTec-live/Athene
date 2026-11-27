@@ -104,7 +104,7 @@ export function NamingTemplateField({
                 <FieldError errors={errors} />
             ) : (
                 <FieldDescription>
-                    Example: <span className="font-mono">{example || "—"}</span>
+                    Example: <span className="font-mono">{example || "-"}</span>
                     {usesCustomPlaceholder(value) &&
                         ". $CUSTOM is entered on the join page, so repositories are created when students join."}
                 </FieldDescription>

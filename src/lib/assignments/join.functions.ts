@@ -58,9 +58,10 @@ async function loadJoinable(code: string) {
     return ctx;
 }
 
+/** Joining closes at the deadline and while the assignment is archived. */
 function isClosed(ctx: ProvisionContext) {
-    const deadline = ctx.assignment.deadline;
-    return !!deadline && deadline.getTime() < Date.now();
+    const { deadline, archivedAt } = ctx.assignment;
+    return !!archivedAt || (!!deadline && deadline.getTime() < Date.now());
 }
 
 async function isAllowedByRoster(ctx: ProvisionContext, userId: string) {
@@ -281,8 +282,7 @@ export const joinAssignment = createServerFn({ method: "POST" })
         const customRequired = usesCustomPlaceholder(a.namingTemplate);
         const fail = (error: string) => ({ success: false as const, error });
 
-        if (isClosed(ctx))
-            return fail("The deadline for this assignment has passed.");
+        if (isClosed(ctx)) return fail("This assignment is closed.");
         const existing = await getMembership(a.id, userId);
         if (!existing && !(await isAllowedByRoster(ctx, userId))) {
             return fail(

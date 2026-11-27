@@ -3,6 +3,7 @@ import { db } from "#/db";
 import { account, user } from "#/db/schema";
 import type { User as ForgejoUser } from "../forgejo/api";
 import { api } from "../forgejo/forgejo-api";
+import { runLimited } from "./provision.server";
 import type { ForgejoStudent } from "./types";
 
 export const FORGEJO_PROVIDER_ID = "forgejo";
@@ -75,6 +76,17 @@ export async function getLinkedForgejoIds(userIds: string[]) {
             .map((row) => [row.userId, Number(row.accountId)] as const)
             .filter(([, id]) => Number.isSafeInteger(id) && id > 0),
     );
+}
+
+/** Resolves Athene users to their current Forgejo accounts, keyed by user id. */
+export async function getStudentsForUsers(userIds: string[]) {
+    const forgejoIds = await getLinkedForgejoIds(userIds);
+    const students = new Map<string, ForgejoStudent>();
+    await runLimited([...forgejoIds], 8, async ([userId, forgejoId]) => {
+        const student = await getForgejoUserById(forgejoId);
+        if (student) students.set(userId, student);
+    });
+    return students;
 }
 
 /**

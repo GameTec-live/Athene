@@ -26,7 +26,7 @@ export class RepoNameTakenError extends Error {
 }
 
 /** The generated Forgejo client throws the failed response object. */
-function forgejoStatus(error: unknown) {
+export function forgejoStatus(error: unknown) {
     return error &&
         typeof error === "object" &&
         "status" in error &&
@@ -116,7 +116,7 @@ async function createRepository(ctx: ProvisionContext, name: string) {
 }
 
 /** Applies the assignment's feature settings; safe to repeat on retries. */
-async function applyFeatures(ctx: ProvisionContext, repoName: string) {
+export async function applyFeatures(ctx: ProvisionContext, repoName: string) {
     const a = ctx.assignment;
     await api.repos.repoEdit(enc(ctx.orgName), enc(repoName), {
         has_issues: a.afHasIssues,

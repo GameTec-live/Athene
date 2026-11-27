@@ -1,73 +1,84 @@
-import { and, eq, isNotNull, isNull, lte, sql } from "drizzle-orm";
+import { and, eq, isNull, lte, sql } from "drizzle-orm";
 import { db } from "#/db";
-import {
-    assignment,
-    assignmentGroup,
-    assignmentMember,
-    classRoom,
-} from "#/db/schema";
+import { assignment, classRoom } from "#/db/schema";
 import { api } from "../forgejo/forgejo-api";
-import { getOrganizationNameById } from "./assignments.server";
+import {
+    getAssignmentRepositoryNames,
+    getOrganizationNameById,
+} from "./assignments.server";
+import { forgejoStatus, runLimited } from "./provision.server";
 
-function forgejoStatus(error: unknown) {
-    return error &&
-        typeof error === "object" &&
-        "status" in error &&
-        typeof error.status === "number"
-        ? error.status
-        : undefined;
-}
-
-/** Archives every repository of one assignment; returns the names that failed. */
-async function archiveAssignmentRepositories(
+/** Archives or unarchives every repository of one assignment. */
+async function setRepositoriesArchived(
     assignmentId: string,
     orgName: string,
+    archived: boolean,
 ) {
-    const [members, groups] = await Promise.all([
-        db
-            .select({ name: assignmentMember.repositoryName })
-            .from(assignmentMember)
-            .where(
-                and(
-                    eq(assignmentMember.assignmentId, assignmentId),
-                    isNotNull(assignmentMember.repositoryName),
-                ),
-            ),
-        db
-            .select({ name: assignmentGroup.repositoryName })
-            .from(assignmentGroup)
-            .where(
-                and(
-                    eq(assignmentGroup.assignmentId, assignmentId),
-                    isNotNull(assignmentGroup.repositoryName),
-                ),
-            ),
-    ]);
-    const names = [...members, ...groups].map((row) => row.name as string);
-
+    const names = await getAssignmentRepositoryNames(assignmentId);
     const failed: string[] = [];
-    for (const name of names) {
+    await runLimited(names, 3, async (name) => {
         try {
             await api.repos.repoEdit(
                 encodeURIComponent(orgName),
                 encodeURIComponent(name),
-                { archived: true },
+                { archived },
                 { signal: AbortSignal.timeout(15_000) },
             );
         } catch (error) {
-            // A deleted repository has nothing left to archive.
-            if (forgejoStatus(error) === 404) continue;
-            console.error(`Failed to archive ${orgName}/${name}`, error);
+            // A deleted repository has nothing left to change.
+            if (forgejoStatus(error) === 404) return;
+            console.error(
+                `Failed to ${archived ? "archive" : "unarchive"} ${orgName}/${name}`,
+                error,
+            );
             failed.push(name);
         }
-    }
+    });
     return { total: names.length, failed };
 }
 
 /**
- * Archives repositories of assignments whose deadline has passed. An
- * assignment is only marked archived once all of its repositories are, so
- * failures are retried on the next run.
+ * Archives all repositories of an assignment, which also closes joining. The
+ * assignment is only marked archived once every repository is, so a failed
+ * run can simply be repeated.
+ */
+export async function archiveAssignment(assignmentId: string, orgName: string) {
+    const result = await setRepositoriesArchived(assignmentId, orgName, true);
+    if (result.failed.length === 0) {
+        await db
+            .update(assignment)
+            .set({ archivedAt: new Date() })
+            .where(eq(assignment.id, assignmentId));
+    }
+    return result;
+}
+
+/**
+ * Reverts {@link archiveAssignment}. Archiving on a deadline that already
+ * passed is switched off, or the deadline task would archive it right away.
+ */
+export async function unarchiveAssignment(
+    target: { id: string; deadline: Date | null },
+    orgName: string,
+) {
+    const result = await setRepositoriesArchived(target.id, orgName, false);
+    if (result.failed.length === 0) {
+        const deadlinePassed =
+            !!target.deadline && target.deadline.getTime() <= Date.now();
+        await db
+            .update(assignment)
+            .set({
+                archivedAt: null,
+                ...(deadlinePassed ? { archiveOnDeadline: false } : {}),
+            })
+            .where(eq(assignment.id, target.id));
+    }
+    return result;
+}
+
+/**
+ * Archives repositories of assignments whose deadline has passed. Failures
+ * are retried on the next run.
  */
 export async function archiveDueAssignments() {
     // Skip this run if another instance (or a slow previous run) is busy.
@@ -101,16 +112,10 @@ export async function archiveDueAssignments() {
                 const orgName = await getOrganizationNameById(
                     entry.organizationId,
                 );
-                const { total, failed } = await archiveAssignmentRepositories(
+                const { total, failed } = await archiveAssignment(
                     entry.id,
                     orgName,
                 );
-                if (failed.length === 0) {
-                    await db
-                        .update(assignment)
-                        .set({ archivedAt: new Date() })
-                        .where(eq(assignment.id, entry.id));
-                }
                 results.push({ assignment: entry.name, total, failed });
             } catch (error) {
                 console.error(
