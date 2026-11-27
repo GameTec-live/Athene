@@ -300,6 +300,7 @@ export const updateAssignment = createServerFn({ method: "POST" })
                 deadline,
                 archiveOnDeadline: !!deadline && s.archiveOnDeadline,
                 autogradeId,
+                ...features,
                 rosterRestriction,
                 // Keep the existing link working while joining stays enabled.
                 joinCode: s.joinLink
@@ -315,14 +316,12 @@ export const updateAssignment = createServerFn({ method: "POST" })
             .where(eq(assignment.id, a.id))
             .returning();
 
-        // Features are only saved once every repository has them, so saving
-        // the same settings again retries the repositories that failed.
+        // Saved first so repositories created meanwhile get the new features.
+        // If any repository fails, the old features are restored, so saving
+        // the same settings again retries the update.
         const failedRepositories: string[] = [];
         if (featuresChanged) {
-            const updatedCtx = {
-                ...ctx,
-                assignment: { ...updated, ...features },
-            };
+            const updatedCtx = { ...ctx, assignment: updated };
             const repositories = await getAssignmentRepositories(a.id);
             await runLimited(repositories, 3, async ({ name }) => {
                 try {
@@ -333,10 +332,17 @@ export const updateAssignment = createServerFn({ method: "POST" })
                     failedRepositories.push(name);
                 }
             });
-            if (failedRepositories.length === 0) {
+            if (failedRepositories.length > 0) {
                 await db
                     .update(assignment)
-                    .set(features)
+                    .set({
+                        afHasIssues: a.afHasIssues,
+                        afHasPackages: a.afHasPackages,
+                        afHasProjects: a.afHasProjects,
+                        afHasPullRequests: a.afHasPullRequests,
+                        afHasReleases: a.afHasReleases,
+                        afHasWiki: a.afHasWiki,
+                    })
                     .where(eq(assignment.id, a.id));
             }
         }

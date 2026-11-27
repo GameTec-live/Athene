@@ -309,7 +309,7 @@ export type GroupTarget = v.InferOutput<typeof groupTargetSchema>;
 
 export const addStudentsSchema = v.object({
     ...assignmentParamsSchema.entries,
-    newGroups: v.pipe(v.array(groupNameSchema), v.maxLength(200)),
+    newGroups: v.array(groupNameSchema),
     students: v.array(
         v.object({
             forgejoId: v.pipe(v.number(), v.integer(), v.minValue(1)),
