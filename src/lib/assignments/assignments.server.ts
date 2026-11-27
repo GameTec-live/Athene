@@ -138,11 +138,14 @@ export async function findMissingReference(refs: {
     return null;
 }
 
-/** Names of all repositories an assignment manages, of members and groups. */
-export async function getAssignmentRepositoryNames(assignmentId: string) {
+/** All repositories an assignment manages, of members and groups. */
+export async function getAssignmentRepositories(assignmentId: string) {
     const [members, groups] = await Promise.all([
         db
-            .select({ name: assignmentMember.repositoryName })
+            .select({
+                id: assignmentMember.repositoryId,
+                name: assignmentMember.repositoryName,
+            })
             .from(assignmentMember)
             .where(
                 and(
@@ -151,7 +154,10 @@ export async function getAssignmentRepositoryNames(assignmentId: string) {
                 ),
             ),
         db
-            .select({ name: assignmentGroup.repositoryName })
+            .select({
+                id: assignmentGroup.repositoryId,
+                name: assignmentGroup.repositoryName,
+            })
             .from(assignmentGroup)
             .where(
                 and(
@@ -160,7 +166,10 @@ export async function getAssignmentRepositoryNames(assignmentId: string) {
                 ),
             ),
     ]);
-    return [...members, ...groups].map((row) => row.name as string);
+    return [...members, ...groups].map((row) => ({
+        id: row.id,
+        name: row.name as string,
+    }));
 }
 
 /** Resolves the current Forgejo usernames of Athene users. */

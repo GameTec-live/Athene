@@ -17,7 +17,7 @@ import {
     findMissingReference,
     generateJoinCode,
     getAssignmentFormOptions,
-    getAssignmentRepositoryNames,
+    getAssignmentRepositories,
     getUsernamesForUsers,
     repositoryUrl,
     requireAssignment,
@@ -281,6 +281,18 @@ export const updateAssignment = createServerFn({ method: "POST" })
         });
         if (missing) return fail(missing);
 
+        const features = {
+            afHasIssues: s.features.issues,
+            afHasPackages: s.features.packages,
+            afHasProjects: s.features.projects,
+            afHasPullRequests: s.features.pullRequests,
+            afHasReleases: s.features.releases,
+            afHasWiki: s.features.wiki,
+        };
+        const featuresChanged = Object.entries(features).some(
+            ([key, value]) => a[key as keyof typeof features] !== value,
+        );
+
         const [updated] = await db
             .update(assignment)
             .set({
@@ -288,12 +300,6 @@ export const updateAssignment = createServerFn({ method: "POST" })
                 deadline,
                 archiveOnDeadline: !!deadline && s.archiveOnDeadline,
                 autogradeId,
-                afHasIssues: s.features.issues,
-                afHasPackages: s.features.packages,
-                afHasProjects: s.features.projects,
-                afHasPullRequests: s.features.pullRequests,
-                afHasReleases: s.features.releases,
-                afHasWiki: s.features.wiki,
                 rosterRestriction,
                 // Keep the existing link working while joining stays enabled.
                 joinCode: s.joinLink
@@ -309,18 +315,16 @@ export const updateAssignment = createServerFn({ method: "POST" })
             .where(eq(assignment.id, a.id))
             .returning();
 
-        const featuresChanged =
-            a.afHasIssues !== updated.afHasIssues ||
-            a.afHasPackages !== updated.afHasPackages ||
-            a.afHasProjects !== updated.afHasProjects ||
-            a.afHasPullRequests !== updated.afHasPullRequests ||
-            a.afHasReleases !== updated.afHasReleases ||
-            a.afHasWiki !== updated.afHasWiki;
+        // Features are only saved once every repository has them, so saving
+        // the same settings again retries the repositories that failed.
         const failedRepositories: string[] = [];
         if (featuresChanged) {
-            const updatedCtx = { ...ctx, assignment: updated };
-            const names = await getAssignmentRepositoryNames(a.id);
-            await runLimited(names, 3, async (name) => {
+            const updatedCtx = {
+                ...ctx,
+                assignment: { ...updated, ...features },
+            };
+            const repositories = await getAssignmentRepositories(a.id);
+            await runLimited(repositories, 3, async ({ name }) => {
                 try {
                     await applyFeatures(updatedCtx, name);
                 } catch (error) {
@@ -329,6 +333,12 @@ export const updateAssignment = createServerFn({ method: "POST" })
                     failedRepositories.push(name);
                 }
             });
+            if (failedRepositories.length === 0) {
+                await db
+                    .update(assignment)
+                    .set(features)
+                    .where(eq(assignment.id, a.id));
+            }
         }
         return { success: true as const, failedRepositories };
     });
@@ -483,8 +493,8 @@ export const addAssignmentStudents = createServerFn({ method: "POST" })
         const deferred = usesCustomPlaceholder(a.namingTemplate);
         if (!deferred) {
             const taken = new Set(
-                (await getAssignmentRepositoryNames(a.id)).map((name) =>
-                    name.toLowerCase(),
+                (await getAssignmentRepositories(a.id)).map((repo) =>
+                    repo.name.toLowerCase(),
                 ),
             );
             const names = isGroup
@@ -738,8 +748,8 @@ export const deleteAssignment = createServerFn({ method: "POST" })
             .set({ joinCode: null })
             .where(eq(assignment.id, a.id));
 
-        const [names, teams] = await Promise.all([
-            getAssignmentRepositoryNames(a.id),
+        const [repositories, teams] = await Promise.all([
+            getAssignmentRepositories(a.id),
             db
                 .select({ id: assignmentGroup.forgejoTeamId })
                 .from(assignmentGroup)
@@ -760,10 +770,17 @@ export const deleteAssignment = createServerFn({ method: "POST" })
                 failed.push(label);
             }
         };
-        await runLimited(names, 3, (name) =>
-            attempt(name, () =>
-                api.repos.repoDelete(enc(ctx.orgName), enc(name)),
-            ),
+        await runLimited(repositories, 3, (repo) =>
+            attempt(repo.name, async () => {
+                // Resolve by id: the stored name may be stale after a rename,
+                // and could by now belong to an unrelated repository.
+                if (repo.id === null) return;
+                const { data } = await api.repositories.repoGetById(repo.id);
+                const [owner, name] = (data.full_name ?? "").split("/");
+                // Moved out of the organization, so no longer ours to delete.
+                if (owner?.toLowerCase() !== ctx.orgName.toLowerCase()) return;
+                await api.repos.repoDelete(enc(owner), enc(name));
+            }),
         );
         await runLimited(teams, 3, (team) =>
             attempt(`team ${team.id}`, () =>

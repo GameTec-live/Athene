@@ -139,16 +139,17 @@ export function AssignmentSettingsForm({
                 return;
             }
             const failed = result.failedRepositories;
-            toast.add(
-                failed.length > 0
-                    ? {
-                          title: "Changes saved with errors",
-                          description: `Repository features could not be updated for ${failed.join(", ")}. Save again to retry.`,
-                          type: "warning",
-                      }
-                    : { title: "Changes saved", type: "success" },
-            );
-            form.reset(value);
+            if (failed.length > 0) {
+                // Leave the edits pending so the save bar can retry them.
+                toast.add({
+                    title: "Repository features not updated",
+                    description: `Updating ${failed.join(", ")} failed, so the feature change was not saved. Save again to retry.`,
+                    type: "warning",
+                });
+            } else {
+                toast.add({ title: "Changes saved", type: "success" });
+                form.reset(value);
+            }
             await router.invalidate();
         },
     });

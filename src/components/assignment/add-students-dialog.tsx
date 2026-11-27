@@ -150,10 +150,15 @@ export function AddStudentsDialog({
             return "Assign every student to a group.";
         }
         if (a.maxGroupMembers) {
+            // Only groups receiving students count; others may already exceed
+            // a limit that was lowered later.
             const totals = [...counts];
-            for (const s of staged) if (s.group !== null) totals[s.group]++;
-            if (totals.some((total) => total > (a.maxGroupMembers ?? 0))) {
-                return "A group would have more members than allowed.";
+            for (const s of staged) {
+                if (s.group === null) continue;
+                totals[s.group]++;
+                if (totals[s.group] > a.maxGroupMembers) {
+                    return "A group would have more members than allowed.";
+                }
             }
         }
         return null;

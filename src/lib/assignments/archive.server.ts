@@ -3,7 +3,7 @@ import { db } from "#/db";
 import { assignment, classRoom } from "#/db/schema";
 import { api } from "../forgejo/forgejo-api";
 import {
-    getAssignmentRepositoryNames,
+    getAssignmentRepositories,
     getOrganizationNameById,
 } from "./assignments.server";
 import { forgejoStatus, runLimited } from "./provision.server";
@@ -14,7 +14,9 @@ async function setRepositoriesArchived(
     orgName: string,
     archived: boolean,
 ) {
-    const names = await getAssignmentRepositoryNames(assignmentId);
+    const names = (await getAssignmentRepositories(assignmentId)).map(
+        (repo) => repo.name,
+    );
     const failed: string[] = [];
     await runLimited(names, 3, async (name) => {
         try {
