@@ -5,6 +5,7 @@ import { api } from "../forgejo/forgejo-api";
 import {
     getAssignmentRepositories,
     getOrganizationNameById,
+    resolveRepositoryName,
 } from "./assignments.server";
 import { forgejoStatus, runLimited } from "./provision.server";
 
@@ -14,12 +15,13 @@ async function setRepositoriesArchived(
     orgName: string,
     archived: boolean,
 ) {
-    const names = (await getAssignmentRepositories(assignmentId)).map(
-        (repo) => repo.name,
-    );
+    const repositories = await getAssignmentRepositories(assignmentId);
     const failed: string[] = [];
-    await runLimited(names, 3, async (name) => {
+    await runLimited(repositories, 3, async (repo) => {
         try {
+            const name = await resolveRepositoryName(repo.id, orgName);
+            // A deleted repository has nothing left to change.
+            if (!name) return;
             await api.repos.repoEdit(
                 encodeURIComponent(orgName),
                 encodeURIComponent(name),
@@ -27,16 +29,15 @@ async function setRepositoriesArchived(
                 { signal: AbortSignal.timeout(15_000) },
             );
         } catch (error) {
-            // A deleted repository has nothing left to change.
             if (forgejoStatus(error) === 404) return;
             console.error(
-                `Failed to ${archived ? "archive" : "unarchive"} ${orgName}/${name}`,
+                `Failed to ${archived ? "archive" : "unarchive"} ${orgName}/${repo.name}`,
                 error,
             );
-            failed.push(name);
+            failed.push(repo.name);
         }
     });
-    return { total: names.length, failed };
+    return { total: repositories.length, failed };
 }
 
 /**

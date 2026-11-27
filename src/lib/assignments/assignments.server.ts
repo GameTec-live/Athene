@@ -13,7 +13,7 @@ import {
 import { env } from "#/env";
 import { api } from "../forgejo/forgejo-api";
 import { requireOrganizationAccess } from "../forgejo/orgs.server";
-import type { ProvisionContext } from "./provision.server";
+import { forgejoStatus, type ProvisionContext } from "./provision.server";
 import { getStudentsForUsers } from "./students.server";
 
 /** Requires organization access and returns the class within it. */
@@ -170,6 +170,31 @@ export async function getAssignmentRepositories(assignmentId: string) {
         id: row.id,
         name: row.name as string,
     }));
+}
+
+/**
+ * Current name of an assignment repository, looked up by its id: a stored
+ * name goes stale when the repository is renamed and may by then belong to
+ * an unrelated one. Null once it was deleted or moved out of the
+ * organization, so there is nothing left to act on.
+ */
+export async function resolveRepositoryName(
+    repositoryId: number | null,
+    orgName: string,
+) {
+    if (repositoryId === null) return null;
+    try {
+        const { data } = await api.repositories.repoGetById(repositoryId, {
+            signal: AbortSignal.timeout(15_000),
+        });
+        const [owner, name] = (data.full_name ?? "").split("/");
+        return owner?.toLowerCase() === orgName.toLowerCase() && name
+            ? name
+            : null;
+    } catch (error) {
+        if (forgejoStatus(error) === 404) return null;
+        throw error;
+    }
 }
 
 /** Resolves the current Forgejo usernames of Athene users. */

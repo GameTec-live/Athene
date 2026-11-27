@@ -21,6 +21,7 @@ import {
     getUsernamesForUsers,
     repositoryUrl,
     requireAssignment,
+    resolveRepositoryName,
     withProvisioningLock,
 } from "./assignments.server";
 import { usesCustomPlaceholder } from "./naming";
@@ -326,9 +327,13 @@ export const updateAssignment = createServerFn({ method: "POST" })
         const failedRepositories: string[] = [];
         if (featuresChanged) {
             const updatedCtx = { ...ctx, assignment: updated };
-            await runLimited(repositories, 3, async ({ name }) => {
+            await runLimited(repositories, 3, async ({ id, name }) => {
                 try {
-                    await applyFeatures(updatedCtx, name);
+                    const current = await resolveRepositoryName(
+                        id,
+                        ctx.orgName,
+                    );
+                    if (current) await applyFeatures(updatedCtx, current);
                 } catch (error) {
                     if (forgejoStatus(error) === 404) return;
                     console.error(`Failed to update ${name}`, error);
@@ -700,12 +705,18 @@ export const removeAssignmentStudent = createServerFn({ method: "POST" })
                                 enc(username),
                             );
                         }
-                    } else if (current.repositoryName) {
-                        await api.repos.repoDeleteCollaborator(
-                            enc(ctx.orgName),
-                            enc(current.repositoryName),
-                            enc(username),
+                    } else {
+                        const repositoryName = await resolveRepositoryName(
+                            current.repositoryId,
+                            ctx.orgName,
                         );
+                        if (repositoryName) {
+                            await api.repos.repoDeleteCollaborator(
+                                enc(ctx.orgName),
+                                enc(repositoryName),
+                                enc(username),
+                            );
+                        }
                     }
                 } catch (error) {
                     if (forgejoStatus(error) !== 404) {
@@ -781,14 +792,9 @@ export const deleteAssignment = createServerFn({ method: "POST" })
         };
         await runLimited(repositories, 3, (repo) =>
             attempt(repo.name, async () => {
-                // Resolve by id: the stored name may be stale after a rename,
-                // and could by now belong to an unrelated repository.
-                if (repo.id === null) return;
-                const { data } = await api.repositories.repoGetById(repo.id);
-                const [owner, name] = (data.full_name ?? "").split("/");
-                // Moved out of the organization, so no longer ours to delete.
-                if (owner?.toLowerCase() !== ctx.orgName.toLowerCase()) return;
-                await api.repos.repoDelete(enc(owner), enc(name));
+                const name = await resolveRepositoryName(repo.id, ctx.orgName);
+                if (name)
+                    await api.repos.repoDelete(enc(ctx.orgName), enc(name));
             }),
         );
         await runLimited(teams, 3, (team) =>
