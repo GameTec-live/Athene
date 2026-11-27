@@ -1,10 +1,20 @@
 import { notFound } from "@tanstack/react-router";
-import { and, eq } from "drizzle-orm";
+import { and, asc, count, eq, isNotNull } from "drizzle-orm";
 import { db } from "#/db";
-import { classRoom } from "#/db/schema";
+import {
+    assignment,
+    assignmentGroup,
+    assignmentMember,
+    autograde,
+    classRoom,
+    roster,
+    rosterMember,
+} from "#/db/schema";
 import { env } from "#/env";
 import { api } from "../forgejo/forgejo-api";
-import { getForgejoUserById, getLinkedForgejoIds } from "./students.server";
+import { requireOrganizationAccess } from "../forgejo/orgs.server";
+import { forgejoStatus, type ProvisionContext } from "./provision.server";
+import { getStudentsForUsers } from "./students.server";
 
 /** Requires organization access and returns the class within it. */
 export async function requireClassroom(
@@ -56,15 +66,143 @@ export async function getOrganizationNameById(organizationId: number) {
     throw new Error(`Forgejo organization ${organizationId} not found`);
 }
 
+/**
+ * Requires organization access and returns the assignment within the class,
+ * ready for provisioning.
+ */
+export async function requireAssignment(params: {
+    orgSlug: string;
+    classId: string;
+    assignmentId: string;
+}) {
+    const organization = await requireOrganizationAccess(params.orgSlug);
+    const classroom = await requireClassroom(organization.id, params.classId);
+    const [row] = await db
+        .select()
+        .from(assignment)
+        .where(
+            and(
+                eq(assignment.id, params.assignmentId),
+                eq(assignment.classRoomId, classroom.id),
+            ),
+        );
+    if (!row) throw notFound();
+    const ctx: ProvisionContext = {
+        assignment: row,
+        orgName: organization.name ?? organization.slug,
+        className: classroom.name,
+    };
+    return { classroom, ctx };
+}
+
+/** Rosters and autograding configs offered by the assignment forms. */
+export async function getAssignmentFormOptions() {
+    const [rosters, autogrades] = await Promise.all([
+        db
+            .select({
+                id: roster.id,
+                name: roster.name,
+                memberCount: count(rosterMember.userId),
+            })
+            .from(roster)
+            .leftJoin(rosterMember, eq(rosterMember.rosterId, roster.id))
+            .groupBy(roster.id)
+            .orderBy(asc(roster.name)),
+        db
+            .select({ id: autograde.id, name: autograde.name })
+            .from(autograde)
+            .orderBy(asc(autograde.name)),
+    ]);
+    return { rosters, autogrades };
+}
+
+/** Returns an error message if a referenced config or roster is missing. */
+export async function findMissingReference(refs: {
+    autogradeId: string | null;
+    rosterRestriction: string | null;
+}) {
+    if (refs.autogradeId) {
+        const [config] = await db
+            .select({ id: autograde.id })
+            .from(autograde)
+            .where(eq(autograde.id, refs.autogradeId));
+        if (!config) return "The autograding config was not found.";
+    }
+    if (refs.rosterRestriction) {
+        const [restriction] = await db
+            .select({ id: roster.id })
+            .from(roster)
+            .where(eq(roster.id, refs.rosterRestriction));
+        if (!restriction) return "The roster was not found.";
+    }
+    return null;
+}
+
+/** All repositories an assignment manages, of members and groups. */
+export async function getAssignmentRepositories(assignmentId: string) {
+    const [members, groups] = await Promise.all([
+        db
+            .select({
+                id: assignmentMember.repositoryId,
+                name: assignmentMember.repositoryName,
+            })
+            .from(assignmentMember)
+            .where(
+                and(
+                    eq(assignmentMember.assignmentId, assignmentId),
+                    isNotNull(assignmentMember.repositoryName),
+                ),
+            ),
+        db
+            .select({
+                id: assignmentGroup.repositoryId,
+                name: assignmentGroup.repositoryName,
+            })
+            .from(assignmentGroup)
+            .where(
+                and(
+                    eq(assignmentGroup.assignmentId, assignmentId),
+                    isNotNull(assignmentGroup.repositoryName),
+                ),
+            ),
+    ]);
+    return [...members, ...groups].map((row) => ({
+        id: row.id,
+        name: row.name as string,
+    }));
+}
+
+/**
+ * Current name of an assignment repository, looked up by its id: a stored
+ * name goes stale when the repository is renamed and may by then belong to
+ * an unrelated one. Null once it was deleted or moved out of the
+ * organization, so there is nothing left to act on.
+ */
+export async function resolveRepositoryName(
+    repositoryId: number | null,
+    orgName: string,
+) {
+    if (repositoryId === null) return null;
+    try {
+        const { data } = await api.repositories.repoGetById(repositoryId, {
+            signal: AbortSignal.timeout(15_000),
+        });
+        const [owner, name] = (data.full_name ?? "").split("/");
+        return owner?.toLowerCase() === orgName.toLowerCase() && name
+            ? name
+            : null;
+    } catch (error) {
+        if (forgejoStatus(error) === 404) return null;
+        throw error;
+    }
+}
+
 /** Resolves the current Forgejo usernames of Athene users. */
 export async function getUsernamesForUsers(userIds: string[]) {
-    const forgejoIds = await getLinkedForgejoIds(userIds);
-    const usernames = new Map<string, string>();
-    for (const [userId, forgejoId] of forgejoIds) {
-        const student = await getForgejoUserById(forgejoId);
-        if (student) usernames.set(userId, student.username);
-    }
-    return usernames;
+    const students = await getStudentsForUsers(userIds);
+    return new Map(
+        [...students].map(([userId, student]) => [userId, student.username]),
+    );
 }
 
 export function repositoryUrl(orgName: string, repositoryName: string) {

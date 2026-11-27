@@ -42,36 +42,68 @@ const limitSchema = v.pipe(
     v.maxValue(10_000),
 );
 
+const nameSchema = v.pipe(
+    v.string(),
+    v.trim(),
+    v.minLength(1, "Enter an assignment name."),
+    v.maxLength(100, "Names must be at most 100 characters."),
+);
+
+/**
+ * Empty for no deadline. Forms hold a local `datetime-local` value and
+ * convert it to an ISO timestamp before submitting.
+ */
+const deadlineSchema = v.union([
+    v.literal(""),
+    v.pipe(
+        v.string(),
+        v.check(
+            (value) => !Number.isNaN(Date.parse(value)),
+            "Enter a valid deadline.",
+        ),
+    ),
+]);
+
+export const FUTURE_DEADLINE_MESSAGE = "The deadline must be in the future.";
+
+const featuresSchema = v.object({
+    issues: v.boolean(),
+    pullRequests: v.boolean(),
+    wiki: v.boolean(),
+    projects: v.boolean(),
+    releases: v.boolean(),
+    packages: v.boolean(),
+});
+
+export type AssignmentFeatures = v.InferOutput<typeof featuresSchema>;
+
+/** Settings shared by the creation form and the details page. */
+const editableFields = {
+    name: nameSchema,
+    deadline: deadlineSchema,
+    archiveOnDeadline: v.boolean(),
+    autograding: v.boolean(),
+    autogradeId: v.nullable(v.pipe(v.string(), v.uuid())),
+    features: featuresSchema,
+    joinLink: v.boolean(),
+    rosterRestriction: v.nullable(v.pipe(v.string(), v.uuid())),
+    /** 0 means unlimited. Only used when students create groups. */
+    maxGroups: limitSchema,
+    /** 0 means unlimited. */
+    maxGroupMembers: limitSchema,
+};
+
 export const assignmentFormSchema = v.pipe(
     v.object({
-        name: v.pipe(
-            v.string(),
-            v.trim(),
-            v.minLength(1, "Enter an assignment name."),
-            v.maxLength(100, "Names must be at most 100 characters."),
+        ...editableFields,
+        deadline: v.pipe(
+            deadlineSchema,
+            v.check(
+                (value) => value === "" || Date.parse(value) > Date.now(),
+                FUTURE_DEADLINE_MESSAGE,
+            ),
         ),
         type: v.picklist(["individual", "group"]),
-        /**
-         * Empty for no deadline. The form holds a local `datetime-local`
-         * value and converts it to an ISO timestamp before submitting.
-         */
-        deadline: v.union([
-            v.literal(""),
-            v.pipe(
-                v.string(),
-                v.check(
-                    (value) => !Number.isNaN(Date.parse(value)),
-                    "Enter a valid deadline.",
-                ),
-                v.check(
-                    (value) => Date.parse(value) > Date.now(),
-                    "The deadline must be in the future.",
-                ),
-            ),
-        ]),
-        archiveOnDeadline: v.boolean(),
-        autograding: v.boolean(),
-        autogradeId: v.nullable(v.pipe(v.string(), v.uuid())),
         /** `owner/name` of a Forgejo template repository. */
         templateRepository: v.nullable(
             v.pipe(
@@ -80,17 +112,7 @@ export const assignmentFormSchema = v.pipe(
             ),
         ),
         studentIsAdmin: v.boolean(),
-        features: v.object({
-            issues: v.boolean(),
-            pullRequests: v.boolean(),
-            wiki: v.boolean(),
-            projects: v.boolean(),
-            releases: v.boolean(),
-            packages: v.boolean(),
-        }),
         namingTemplate: v.pipe(v.string(), v.trim()),
-        joinLink: v.boolean(),
-        rosterRestriction: v.nullable(v.pipe(v.string(), v.uuid())),
         /** Preassigned students. `group` indexes into `groups`. */
         students: v.array(
             v.object({
@@ -100,10 +122,6 @@ export const assignmentFormSchema = v.pipe(
         ),
         groupNaming: v.picklist(["predefined", "student"]),
         groups: v.array(groupNameSchema),
-        /** 0 means unlimited. Only used when students create groups. */
-        maxGroups: limitSchema,
-        /** 0 means unlimited. */
-        maxGroupMembers: limitSchema,
     }),
     v.forward(
         v.check(
@@ -238,4 +256,69 @@ export const createAssignmentSchema = v.object({
     orgSlug: orgSlugSchema,
     classId: v.pipe(v.string(), v.uuid()),
     assignment: assignmentFormSchema,
+});
+
+/**
+ * Settings that stay editable after creation. The deadline may lie in the
+ * past here, since an existing past deadline has to survive unrelated edits;
+ * the server only rejects a past deadline when it changes.
+ */
+export const assignmentSettingsSchema = v.pipe(
+    v.object(editableFields),
+    v.forward(
+        v.check(
+            (input) => !input.autograding || !!input.autogradeId,
+            "Select an autograding config.",
+        ),
+        ["autogradeId"],
+    ),
+    v.forward(
+        v.check(
+            (input) => input.joinLink || !input.rosterRestriction,
+            "Restricting to a roster requires joining via link.",
+        ),
+        ["rosterRestriction"],
+    ),
+);
+
+export type AssignmentSettingsValues = v.InferInput<
+    typeof assignmentSettingsSchema
+>;
+
+export const assignmentParamsSchema = v.object({
+    orgSlug: orgSlugSchema,
+    classId: v.pipe(v.string(), v.uuid()),
+    assignmentId: v.pipe(v.string(), v.uuid()),
+});
+
+export const updateAssignmentSchema = v.object({
+    ...assignmentParamsSchema.entries,
+    settings: assignmentSettingsSchema,
+});
+
+/** A group an added student goes into: an existing one or one of `newGroups`. */
+const groupTargetSchema = v.variant("type", [
+    v.object({ type: v.literal("existing"), id: v.pipe(v.string(), v.uuid()) }),
+    v.object({
+        type: v.literal("new"),
+        index: v.pipe(v.number(), v.integer(), v.minValue(0)),
+    }),
+]);
+
+export type GroupTarget = v.InferOutput<typeof groupTargetSchema>;
+
+export const addStudentsSchema = v.object({
+    ...assignmentParamsSchema.entries,
+    newGroups: v.array(groupNameSchema),
+    students: v.array(
+        v.object({
+            forgejoId: v.pipe(v.number(), v.integer(), v.minValue(1)),
+            group: v.nullable(groupTargetSchema),
+        }),
+    ),
+});
+
+export const removeStudentSchema = v.object({
+    ...assignmentParamsSchema.entries,
+    userId: v.pipe(v.string(), v.minLength(1)),
 });

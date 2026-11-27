@@ -1,19 +1,10 @@
 import { revalidateLogic, useForm, useStore } from "@tanstack/react-form";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { ShuffleIcon } from "lucide-react";
-import { type ReactNode, useId, useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "#/components/ui/button";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "#/components/ui/card";
-import { Checkbox } from "#/components/ui/checkbox";
-import {
     Field,
-    FieldContent,
     FieldDescription,
     FieldError,
     FieldGroup,
@@ -22,20 +13,11 @@ import {
     FieldSet,
 } from "#/components/ui/field";
 import { Input } from "#/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "#/components/ui/radio-group";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "#/components/ui/select";
-import { Switch } from "#/components/ui/switch";
+import { RadioGroup } from "#/components/ui/radio-group";
 import { toast } from "#/components/ui/toast";
 import {
     createAssignment,
     type getNewAssignmentOptions,
-    getRosterStudents,
 } from "#/lib/assignments/assignments.functions";
 import {
     DEFAULT_NAMING_TEMPLATES,
@@ -43,7 +25,6 @@ import {
     usesCustomPlaceholder,
 } from "#/lib/assignments/naming";
 import {
-    ASSIGNMENT_FEATURES,
     type AssignmentFormValues,
     assignmentFormSchema,
 } from "#/lib/assignments/schemas";
@@ -53,19 +34,30 @@ import {
     type MemberRow,
 } from "./assignment-members-table";
 import {
-    type CreationItem,
     CreationProgressDialog,
     type CreationState,
+    readProvisioning,
 } from "./creation-progress-dialog";
+import {
+    AutogradingFields,
+    CheckboxField,
+    DeadlineFields,
+    distributeIntoGroups,
+    type FieldErrors,
+    FormSection,
+    JoinLinkFields,
+    NumberField,
+    RadioOption,
+    RepositoryFeaturesField,
+    StudentPicker,
+    TWO_COLUMNS,
+} from "./form-fields";
 import { NamingTemplateField } from "./naming-template-field";
-import { StudentSearch } from "./student-search";
 import { TemplateRepositorySelect } from "./template-repository-select";
 
 type Options = Awaited<ReturnType<typeof getNewAssignmentOptions>>;
-type FieldErrors = ({ message?: string } | undefined)[];
 
 const MAX_PREDEFINED_GROUPS = 200;
-const ANYONE = "anyone";
 
 function groupName(index: number) {
     return `Team ${index + 1}`;
@@ -111,7 +103,6 @@ export function NewAssignmentForm({
     const [students, setStudents] = useState(
         () => new Map<number, ForgejoStudent>(),
     );
-    const [addingRoster, setAddingRoster] = useState(false);
     const [creation, setCreation] = useState<CreationState | null>(null);
     const classId = options.classroom.id;
 
@@ -165,69 +156,26 @@ export function NewAssignmentForm({
             const joinUrl = result.joinCode
                 ? `${window.location.origin}/join/${result.joinCode}`
                 : null;
-            const items = new Map<string, CreationItem>(
-                result.repositories.map((name) => [
-                    name,
-                    { name, status: "pending" },
-                ]),
+            const outcome = await readProvisioning(result, (patch) =>
+                setCreation({ phase: "provisioning", joinUrl, ...patch }),
             );
-            const update = (patch: Partial<CreationState>) =>
-                setCreation({
-                    phase: "provisioning",
-                    assignmentId: result.assignmentId,
-                    joinUrl,
-                    items: [...items.values()],
-                    ...patch,
-                });
-            update({});
-
-            let connectionLost = false;
-            if (result.progress) {
-                const reader = result.progress.getReader();
-                try {
-                    for (;;) {
-                        const { done, value: event } = await reader.read();
-                        if (done) break;
-                        items.set(
-                            event.name,
-                            event.type === "started"
-                                ? { name: event.name, status: "running" }
-                                : event.success
-                                  ? {
-                                        name: event.name,
-                                        status: "done",
-                                        detail: event.repositoryName,
-                                    }
-                                  : {
-                                        name: event.name,
-                                        status: "failed",
-                                        detail: event.error,
-                                    },
-                        );
-                        update({});
-                    }
-                } catch (error) {
-                    console.error("Lost repository progress updates", error);
-                }
-                connectionLost = [...items.values()].some(
-                    (item) =>
-                        item.status === "pending" || item.status === "running",
-                );
-            }
 
             await router.invalidate({
                 filter: (match) =>
                     match.routeId ===
                     "/_authenticated/dashboard/organizations/$orgSlug/$classId/",
             });
-            const failed = [...items.values()].some(
-                (item) => item.status === "failed",
-            );
-            if (!joinUrl && !failed && !connectionLost) {
+            if (!joinUrl && !outcome.failed && !outcome.connectionLost) {
                 await openAssignment(result.assignmentId);
                 return;
             }
-            update({ phase: "done", connectionLost });
+            setCreation({
+                phase: "done",
+                joinUrl,
+                assignmentId: result.assignmentId,
+                items: outcome.items,
+                connectionLost: outcome.connectionLost,
+            });
         },
     });
 
@@ -306,50 +254,15 @@ export function NewAssignmentForm({
         return fresh.length;
     }
 
-    async function addRoster(rosterId: string) {
-        setAddingRoster(true);
-        try {
-            const result = await getRosterStudents({ data: { rosterId } });
-            const added = addStudents(result.students);
-            toast.add({
-                title: `Added ${added} ${added === 1 ? "student" : "students"}`,
-                description:
-                    result.skipped > 0
-                        ? `${result.skipped} roster members have no Forgejo account and were skipped.`
-                        : undefined,
-                type: "success",
-            });
-        } catch {
-            toast.add({ title: "Failed to add roster", type: "error" });
-        } finally {
-            setAddingRoster(false);
-        }
-    }
-
     /** Assigns students without a group to the emptiest groups. */
     function distributeStudents() {
-        const counts = values.groups.map(
-            (_, index) =>
-                values.students.filter((s) => s.group === index).length,
-        );
-        const max = values.maxGroupMembers || Number.POSITIVE_INFINITY;
         set(
             "students",
-            values.students.map((student) => {
-                if (student.group !== null) return student;
-                let target = -1;
-                for (let index = 0; index < counts.length; index++) {
-                    if (
-                        counts[index] < max &&
-                        (target === -1 || counts[index] < counts[target])
-                    ) {
-                        target = index;
-                    }
-                }
-                if (target === -1) return student;
-                counts[target]++;
-                return { ...student, group: target };
-            }),
+            distributeIntoGroups(
+                values.students,
+                values.groups.map(() => 0),
+                values.maxGroupMembers,
+            ),
         );
     }
 
@@ -362,10 +275,6 @@ export function NewAssignmentForm({
         const student = students.get(entry.forgejoId);
         return student ? [{ student, group: entry.group }] : [];
     });
-    const rosterItems = options.rosters.map((roster) => ({
-        value: roster.id,
-        label: `${roster.name} (${roster.memberCount})`,
-    }));
 
     return (
         <form
@@ -410,36 +319,16 @@ export function NewAssignmentForm({
                             }}
                         </form.Field>
 
-                        <Field data-invalid={errorsOf("deadline").length > 0}>
-                            <FieldLabel htmlFor={`${id}-deadline`}>
-                                Deadline
-                            </FieldLabel>
-                            <Input
-                                id={`${id}-deadline`}
-                                type="datetime-local"
-                                className="max-w-64"
-                                value={values.deadline}
-                                onChange={(event) =>
-                                    set("deadline", event.target.value)
-                                }
-                                aria-invalid={errorsOf("deadline").length > 0}
-                            />
-                            <FieldDescription>
-                                Leave empty for no deadline. Joining via link
-                                closes at the deadline.
-                            </FieldDescription>
-                            <FieldError errors={errorsOf("deadline")} />
-                        </Field>
-                        {values.deadline && (
-                            <CheckboxField
-                                id={`${id}-archive`}
-                                checked={values.archiveOnDeadline}
-                                onChange={(checked) =>
-                                    set("archiveOnDeadline", checked)
-                                }
-                                label="Archive repositories on deadline"
-                            />
-                        )}
+                        <DeadlineFields
+                            id={id}
+                            deadline={values.deadline}
+                            archiveOnDeadline={values.archiveOnDeadline}
+                            onDeadlineChange={(value) => set("deadline", value)}
+                            onArchiveOnDeadlineChange={(checked) =>
+                                set("archiveOnDeadline", checked)
+                            }
+                            errors={errorsOf("deadline")}
+                        />
                     </FieldGroup>
                     <FieldGroup>
                         <FieldSet>
@@ -631,27 +520,11 @@ export function NewAssignmentForm({
                         />
                     </FieldGroup>
                     <FieldGroup>
-                        <FieldSet>
-                            <FieldLegend variant="label">
-                                Repository features
-                            </FieldLegend>
-                            <div className="grid w-fit grid-cols-2 gap-x-8 gap-y-3 @md:grid-cols-3">
-                                {ASSIGNMENT_FEATURES.map((feature) => (
-                                    <CheckboxField
-                                        key={feature.key}
-                                        id={`${id}-feature-${feature.key}`}
-                                        checked={values.features[feature.key]}
-                                        onChange={(checked) =>
-                                            set("features", {
-                                                ...values.features,
-                                                [feature.key]: checked,
-                                            })
-                                        }
-                                        label={feature.label}
-                                    />
-                                ))}
-                            </div>
-                        </FieldSet>
+                        <RepositoryFeaturesField
+                            id={id}
+                            features={values.features}
+                            onChange={(features) => set("features", features)}
+                        />
                         <CheckboxField
                             id={`${id}-admin`}
                             checked={values.studentIsAdmin}
@@ -667,145 +540,40 @@ export function NewAssignmentForm({
             <FormSection title="Access & grading">
                 <div className={TWO_COLUMNS}>
                     <FieldGroup>
-                        <Field orientation="horizontal">
-                            <Switch
-                                id={`${id}-join`}
-                                checked={values.joinLink}
-                                disabled={studentNamed}
-                                onCheckedChange={setJoinLink}
-                            />
-                            <FieldContent>
-                                <FieldLabel htmlFor={`${id}-join`}>
-                                    Join via link
-                                </FieldLabel>
-                                <FieldDescription>
-                                    {studentNamed
-                                        ? "Required when students create their own groups."
-                                        : isGroup
-                                          ? "Students pick or create a group through a shareable link."
-                                          : "Students accept the assignment through a shareable link."}
-                                </FieldDescription>
-                            </FieldContent>
-                        </Field>
-                        {values.joinLink && (
-                            <Field
-                                data-invalid={
-                                    errorsOf("rosterRestriction").length > 0
-                                }
-                            >
-                                <FieldLabel htmlFor={`${id}-restrict`}>
-                                    Restrict joining to roster
-                                </FieldLabel>
-                                <Select
-                                    items={[
-                                        {
-                                            value: ANYONE,
-                                            label: "Anyone with the link",
-                                        },
-                                        ...rosterItems,
-                                    ]}
-                                    value={values.rosterRestriction ?? ANYONE}
-                                    onValueChange={(value) =>
-                                        set(
-                                            "rosterRestriction",
-                                            value && value !== ANYONE
-                                                ? value
-                                                : null,
-                                        )
-                                    }
-                                >
-                                    <SelectTrigger
-                                        id={`${id}-restrict`}
-                                        className="w-full"
-                                    >
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={ANYONE}>
-                                            Anyone with the link
-                                        </SelectItem>
-                                        {rosterItems.map((item) => (
-                                            <SelectItem
-                                                key={item.value}
-                                                value={item.value}
-                                            >
-                                                {item.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <FieldError
-                                    errors={errorsOf("rosterRestriction")}
-                                />
-                            </Field>
-                        )}
+                        <JoinLinkFields
+                            id={id}
+                            joinLink={values.joinLink}
+                            rosterRestriction={values.rosterRestriction}
+                            rosters={options.rosters}
+                            locked={studentNamed}
+                            description={
+                                studentNamed
+                                    ? "Required when students create their own groups."
+                                    : isGroup
+                                      ? "Students pick or create a group through a shareable link."
+                                      : "Students accept the assignment through a shareable link."
+                            }
+                            onJoinLinkChange={setJoinLink}
+                            onRosterRestrictionChange={(value) =>
+                                set("rosterRestriction", value)
+                            }
+                            errors={errorsOf("rosterRestriction")}
+                        />
                     </FieldGroup>
                     <FieldGroup>
-                        <Field orientation="horizontal">
-                            <Switch
-                                id={`${id}-autograding`}
-                                checked={values.autograding}
-                                onCheckedChange={(checked) =>
-                                    set("autograding", checked)
-                                }
-                            />
-                            <FieldContent>
-                                <FieldLabel htmlFor={`${id}-autograding`}>
-                                    Autograding
-                                </FieldLabel>
-                                <FieldDescription>
-                                    Grade submissions automatically with an
-                                    autograding config.
-                                </FieldDescription>
-                            </FieldContent>
-                        </Field>
-                        {values.autograding && (
-                            <Field
-                                data-invalid={
-                                    errorsOf("autogradeId").length > 0
-                                }
-                            >
-                                <FieldLabel htmlFor={`${id}-autograde-config`}>
-                                    Autograding config
-                                </FieldLabel>
-                                <Select
-                                    items={options.autogrades.map((config) => ({
-                                        value: config.id,
-                                        label: config.name,
-                                    }))}
-                                    value={values.autogradeId}
-                                    onValueChange={(value) =>
-                                        set("autogradeId", value)
-                                    }
-                                >
-                                    <SelectTrigger
-                                        id={`${id}-autograde-config`}
-                                        className="w-full"
-                                        aria-invalid={
-                                            errorsOf("autogradeId").length > 0
-                                        }
-                                    >
-                                        <SelectValue placeholder="Select a config" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {options.autogrades.map((config) => (
-                                            <SelectItem
-                                                key={config.id}
-                                                value={config.id}
-                                            >
-                                                {config.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {options.autogrades.length === 0 && (
-                                    <FieldDescription>
-                                        No autograding configs exist yet.
-                                    </FieldDescription>
-                                )}
-                                <FieldError errors={errorsOf("autogradeId")} />
-                            </Field>
-                        )}
+                        <AutogradingFields
+                            id={id}
+                            autograding={values.autograding}
+                            autogradeId={values.autogradeId}
+                            autogrades={options.autogrades}
+                            onAutogradingChange={(checked) =>
+                                set("autograding", checked)
+                            }
+                            onAutogradeIdChange={(value) =>
+                                set("autogradeId", value)
+                            }
+                            errors={errorsOf("autogradeId")}
+                        />
                     </FieldGroup>
                 </div>
             </FormSection>
@@ -822,76 +590,30 @@ export function NewAssignmentForm({
                     }
                 >
                     <div className="space-y-3">
-                        <div className="flex flex-wrap gap-2">
-                            <div className="min-w-0 flex-1 basis-80">
-                                <StudentSearch
-                                    id={`${id}-student-search`}
-                                    excludeIds={
-                                        new Set(
-                                            values.students.map(
-                                                (s) => s.forgejoId,
-                                            ),
+                        <StudentPicker
+                            id={id}
+                            excludeIds={
+                                new Set(values.students.map((s) => s.forgejoId))
+                            }
+                            rosters={options.rosters}
+                            onAdd={addStudents}
+                        >
+                            {isGroup && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={
+                                        !values.students.some(
+                                            (s) => s.group === null,
                                         )
                                     }
-                                    onSelect={(student) =>
-                                        addStudents([student])
-                                    }
-                                />
-                            </div>
-                            {/* Roster picker and Fill groups wrap together. */}
-                            <div className="flex max-w-full gap-2">
-                                <Select
-                                    items={rosterItems}
-                                    value={null}
-                                    disabled={
-                                        addingRoster || rosterItems.length === 0
-                                    }
-                                    onValueChange={(value) => {
-                                        if (value) void addRoster(value);
-                                    }}
+                                    onClick={distributeStudents}
                                 >
-                                    <SelectTrigger
-                                        className="min-w-0 flex-1 @sm:w-56 @sm:flex-none"
-                                        aria-label="Add students from roster"
-                                    >
-                                        <SelectValue
-                                            placeholder={
-                                                addingRoster
-                                                    ? "Adding roster…"
-                                                    : rosterItems.length === 0
-                                                      ? "No rosters"
-                                                      : "Add from roster"
-                                            }
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {rosterItems.map((item) => (
-                                            <SelectItem
-                                                key={item.value}
-                                                value={item.value}
-                                            >
-                                                {item.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {isGroup && (
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        disabled={
-                                            !values.students.some(
-                                                (s) => s.group === null,
-                                            )
-                                        }
-                                        onClick={distributeStudents}
-                                    >
-                                        <ShuffleIcon data-icon="inline-start" />
-                                        Fill groups
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
+                                    <ShuffleIcon data-icon="inline-start" />
+                                    Fill groups
+                                </Button>
+                            )}
+                        </StudentPicker>
                         <AssignmentMembersTable
                             rows={rows}
                             groups={values.groups}
@@ -899,7 +621,7 @@ export function NewAssignmentForm({
                             repositoryName={(row) => {
                                 if (deferred) return null;
                                 if (isGroup) {
-                                    if (row.group === null) return "—";
+                                    if (row.group === null) return "-";
                                     return renderRepoName(
                                         values.namingTemplate,
                                         {
@@ -965,127 +687,5 @@ export function NewAssignmentForm({
                 />
             )}
         </form>
-    );
-}
-
-/** Side-by-side field columns inside a section card on wide forms. */
-const TWO_COLUMNS = "grid gap-4 @3xl:grid-cols-2 @3xl:gap-x-8";
-
-/** A titled card holding one section of the form. */
-function FormSection({
-    title,
-    description,
-    children,
-}: {
-    title: string;
-    description?: string;
-    children: ReactNode;
-}) {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="text-base">{title}</CardTitle>
-                {description && (
-                    <CardDescription>{description}</CardDescription>
-                )}
-            </CardHeader>
-            <CardContent>{children}</CardContent>
-        </Card>
-    );
-}
-
-function RadioOption({
-    id,
-    value,
-    label,
-    description,
-}: {
-    id: string;
-    value: string;
-    label: string;
-    description: string;
-}) {
-    return (
-        <Field orientation="horizontal">
-            <RadioGroupItem id={id} value={value} />
-            <FieldContent>
-                <FieldLabel htmlFor={id}>{label}</FieldLabel>
-                <FieldDescription>{description}</FieldDescription>
-            </FieldContent>
-        </Field>
-    );
-}
-
-function CheckboxField({
-    id,
-    checked,
-    onChange,
-    label,
-    description,
-}: {
-    id: string;
-    checked: boolean;
-    onChange: (checked: boolean) => void;
-    label: string;
-    description?: string;
-}) {
-    return (
-        <Field orientation="horizontal">
-            <Checkbox id={id} checked={checked} onCheckedChange={onChange} />
-            {description ? (
-                <FieldContent>
-                    <FieldLabel htmlFor={id}>{label}</FieldLabel>
-                    <FieldDescription>{description}</FieldDescription>
-                </FieldContent>
-            ) : (
-                <FieldLabel htmlFor={id}>{label}</FieldLabel>
-            )}
-        </Field>
-    );
-}
-
-function NumberField({
-    id,
-    label,
-    description,
-    value,
-    min = 0,
-    onChange,
-    errors = [],
-}: {
-    id: string;
-    label: string;
-    description?: string;
-    value: number;
-    min?: number;
-    onChange: (value: number) => void;
-    errors?: FieldErrors;
-}) {
-    const [text, setText] = useState(String(value));
-    // Keep the text in sync when the value changes from elsewhere.
-    if (text !== "" && Number(text) !== value) setText(String(value));
-
-    return (
-        <Field data-invalid={errors.length > 0}>
-            <FieldLabel htmlFor={id}>{label}</FieldLabel>
-            <Input
-                id={id}
-                type="number"
-                inputMode="numeric"
-                min={min}
-                step={1}
-                value={text}
-                className="max-w-32"
-                aria-invalid={errors.length > 0}
-                onChange={(event) => {
-                    setText(event.target.value);
-                    const parsed = Number.parseInt(event.target.value, 10);
-                    if (!Number.isNaN(parsed)) onChange(parsed);
-                }}
-                onBlur={() => setText(String(value))}
-            />
-            {description && <FieldDescription>{description}</FieldDescription>}
-            <FieldError errors={errors} />
-        </Field>
     );
 }

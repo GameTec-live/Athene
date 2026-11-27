@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+    ArchiveIcon,
     ArrowRightIcon,
     SearchIcon,
     UserGroupIcon,
@@ -7,6 +8,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { AssignmentCapabilityChip } from "#/components/assignment/assignment-capability-chip";
+import { Badge } from "#/components/ui/badge";
 import { Button } from "#/components/ui/button";
 import {
     Card,
@@ -131,7 +133,7 @@ function ClassAssignments({
                                         </CardAction>
                                     </CardHeader>
                                     <CardFooter>
-                                        <div className="flex w-full items-center gap-2 justify-between">
+                                        <div className="flex w-full items-center gap-2">
                                             {assignment.type === "group" ? (
                                                 <Tooltip>
                                                     <TooltipTrigger>
@@ -151,8 +153,14 @@ function ClassAssignments({
                                                     </TooltipContent>
                                                 </Tooltip>
                                             )}
+                                            {assignment.archivedAt && (
+                                                <Badge variant="secondary">
+                                                    <ArchiveIcon data-icon="inline-start" />
+                                                    Archived
+                                                </Badge>
+                                            )}
                                             {assignment.deadline && (
-                                                <span className="text-sm text-muted-foreground">
+                                                <span className="ml-auto text-sm text-muted-foreground">
                                                     Due{" "}
                                                     {assignment.deadline.toLocaleDateString()}
                                                 </span>

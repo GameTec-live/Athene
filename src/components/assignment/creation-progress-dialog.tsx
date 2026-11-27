@@ -23,6 +23,7 @@ import {
     InputGroupInput,
 } from "#/components/ui/input-group";
 import { Spinner } from "#/components/ui/spinner";
+import type { ProvisionEvent } from "#/lib/assignments/types";
 
 export type CreationItem = {
     name: string;
@@ -39,13 +40,83 @@ export type CreationState = {
     connectionLost?: boolean;
 };
 
+/**
+ * Follows the repositories reported by a provisioning server function,
+ * updating `onUpdate` as they progress. Resolves once the stream ends.
+ */
+export async function readProvisioning(
+    result: {
+        assignmentId?: string;
+        repositories: string[];
+        progress: ReadableStream<ProvisionEvent> | null;
+    },
+    onUpdate: (patch: Pick<CreationState, "assignmentId" | "items">) => void,
+) {
+    const items = new Map<string, CreationItem>(
+        result.repositories.map((name) => [name, { name, status: "pending" }]),
+    );
+    const update = () =>
+        onUpdate({
+            assignmentId: result.assignmentId,
+            items: [...items.values()],
+        });
+    update();
+
+    if (result.progress) {
+        const reader = result.progress.getReader();
+        try {
+            for (;;) {
+                const { done, value: event } = await reader.read();
+                if (done) break;
+                items.set(
+                    event.name,
+                    event.type === "started"
+                        ? { name: event.name, status: "running" }
+                        : event.success
+                          ? {
+                                name: event.name,
+                                status: "done",
+                                detail: event.repositoryName,
+                            }
+                          : {
+                                name: event.name,
+                                status: "failed",
+                                detail: event.error,
+                            },
+                );
+                update();
+            }
+        } catch (error) {
+            console.error("Lost repository progress updates", error);
+        }
+    }
+
+    const finalItems = [...items.values()];
+    return {
+        items: finalItems,
+        failed: finalItems.some((item) => item.status === "failed"),
+        connectionLost:
+            !!result.progress &&
+            finalItems.some(
+                (item) =>
+                    item.status === "pending" || item.status === "running",
+            ),
+    };
+}
+
 /** Follows an assignment from saving through repository creation. */
 export function CreationProgressDialog({
     state,
     onContinue,
+    title = { working: "Creating assignment", done: "Assignment created" },
+    savingLabel = "Saving assignment and registering students…",
+    continueLabel = "Go to assignment",
 }: {
     state: CreationState;
     onContinue: () => void;
+    title?: { working: string; done: string };
+    savingLabel?: string;
+    continueLabel?: string;
 }) {
     const done = state.phase === "done";
     const finished = state.items.filter(
@@ -67,11 +138,11 @@ export function CreationProgressDialog({
             <DialogContent showCloseButton={done}>
                 <DialogHeader>
                     <DialogTitle>
-                        {done ? "Assignment created" : "Creating assignment"}
+                        {done ? title.done : title.working}
                     </DialogTitle>
                     <DialogDescription>
                         {state.phase === "saving"
-                            ? "Saving the assignment…"
+                            ? "Saving…"
                             : state.phase === "provisioning"
                               ? `Creating repositories: ${finished} of ${total}`
                               : total > 0
@@ -83,7 +154,7 @@ export function CreationProgressDialog({
                 {state.phase === "saving" && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Spinner />
-                        Saving assignment and registering students…
+                        {savingLabel}
                     </div>
                 )}
 
@@ -158,7 +229,7 @@ export function CreationProgressDialog({
 
                 <DialogFooter>
                     <Button type="button" disabled={!done} onClick={onContinue}>
-                        {done ? "Go to assignment" : "Please wait…"}
+                        {done ? continueLabel : "Please wait…"}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -194,7 +265,7 @@ function ItemIcon({ status }: { status: CreationItem["status"] }) {
     }
 }
 
-function JoinLink({ url }: { url: string }) {
+export function JoinLink({ url }: { url: string }) {
     const [copied, setCopied] = useState(false);
     return (
         <div className="space-y-1.5">

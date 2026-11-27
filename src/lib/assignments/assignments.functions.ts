@@ -1,13 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
-import { asc, count, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import * as v from "valibot";
 import { db } from "#/db";
 import {
     assignment,
     assignmentGroup,
     assignmentMember,
-    autograde,
-    roster,
     rosterMember,
 } from "#/db/schema";
 import { dashboardMiddleware } from "../auth.functions";
@@ -15,7 +13,12 @@ import { orgSlugSchema } from "../common-schemas";
 import type { Repository } from "../forgejo/api";
 import { api } from "../forgejo/forgejo-api";
 import { requireOrganizationAccess } from "../forgejo/orgs.server";
-import { generateJoinCode, requireClassroom } from "./assignments.server";
+import {
+    findMissingReference,
+    generateJoinCode,
+    getAssignmentFormOptions,
+    requireClassroom,
+} from "./assignments.server";
 import { usesCustomPlaceholder } from "./naming";
 import {
     type ProvisionContext,
@@ -46,27 +49,10 @@ export const getNewAssignmentOptions = createServerFn({ method: "GET" })
     .handler(async ({ data }) => {
         const organization = await requireOrganizationAccess(data.orgSlug);
         const classroom = await requireClassroom(organization.id, data.classId);
-        const [rosters, autogrades] = await Promise.all([
-            db
-                .select({
-                    id: roster.id,
-                    name: roster.name,
-                    memberCount: count(rosterMember.userId),
-                })
-                .from(roster)
-                .leftJoin(rosterMember, eq(rosterMember.rosterId, roster.id))
-                .groupBy(roster.id)
-                .orderBy(asc(roster.name)),
-            db
-                .select({ id: autograde.id, name: autograde.name })
-                .from(autograde)
-                .orderBy(asc(autograde.name)),
-        ]);
         return {
             organization: { name: organization.name ?? organization.slug },
             classroom: { id: classroom.id, name: classroom.name },
-            rosters,
-            autogrades,
+            ...(await getAssignmentFormOptions()),
         };
     });
 
@@ -176,20 +162,11 @@ export const createAssignment = createServerFn({ method: "POST" })
             }
         }
         const autogradeId = input.autograding ? input.autogradeId : null;
-        if (autogradeId) {
-            const [config] = await db
-                .select({ id: autograde.id })
-                .from(autograde)
-                .where(eq(autograde.id, autogradeId));
-            if (!config) return fail("The autograding config was not found.");
-        }
-        if (input.rosterRestriction) {
-            const [restriction] = await db
-                .select({ id: roster.id })
-                .from(roster)
-                .where(eq(roster.id, input.rosterRestriction));
-            if (!restriction) return fail("The roster was not found.");
-        }
+        const missing = await findMissingReference({
+            autogradeId,
+            rosterRestriction: input.rosterRestriction,
+        });
+        if (missing) return fail(missing);
 
         const isGroup = input.type === "group";
         const predefinedGroups =

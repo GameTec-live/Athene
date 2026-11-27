@@ -148,7 +148,7 @@ export function JoinAssignment({
                     <Alert>
                         <AlertDescription>
                             {info.status === "closed"
-                                ? "The deadline for this assignment has passed, so it can no longer be joined."
+                                ? "This assignment is closed, so it can no longer be joined."
                                 : "This assignment is only open to students on a specific roster. Contact your teacher if you think this is a mistake."}
                         </AlertDescription>
                     </Alert>

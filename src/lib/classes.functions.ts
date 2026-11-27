@@ -53,6 +53,7 @@ export const getClassAssignments = createServerFn({ method: "GET" })
                 creatorName: user.name,
                 type: assignment.type,
                 deadline: assignment.deadline,
+                archivedAt: assignment.archivedAt,
                 afHasIssues: assignment.afHasIssues,
                 afHasPackages: assignment.afHasPackages,
                 afHasProjects: assignment.afHasProjects,

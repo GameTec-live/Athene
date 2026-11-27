@@ -86,7 +86,7 @@ export function AssignmentMembersTable({
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-muted-foreground">
-                                    {row.student.email ?? "—"}
+                                    {row.student.email ?? "-"}
                                 </TableCell>
                                 {showGroups && (
                                     <TableCell>
