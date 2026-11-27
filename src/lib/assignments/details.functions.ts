@@ -293,6 +293,10 @@ export const updateAssignment = createServerFn({ method: "POST" })
             ([key, value]) => a[key as keyof typeof features] !== value,
         );
 
+        // Listed before saving, so a failure here leaves nothing to roll back.
+        const repositories = featuresChanged
+            ? await getAssignmentRepositories(a.id)
+            : [];
         const [updated] = await db
             .update(assignment)
             .set({
@@ -322,7 +326,6 @@ export const updateAssignment = createServerFn({ method: "POST" })
         const failedRepositories: string[] = [];
         if (featuresChanged) {
             const updatedCtx = { ...ctx, assignment: updated };
-            const repositories = await getAssignmentRepositories(a.id);
             await runLimited(repositories, 3, async ({ name }) => {
                 try {
                     await applyFeatures(updatedCtx, name);
