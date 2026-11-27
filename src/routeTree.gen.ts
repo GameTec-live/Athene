@@ -24,6 +24,7 @@ import { Route as AuthenticatedDashboardOrganizationsIndexRouteImport } from './
 import { Route as AuthenticatedDashboardOrganizationsOrgSlugRouteRouteImport } from './routes/_authenticated/dashboard/organizations/$orgSlug/route'
 import { Route as AuthenticatedDashboardRostersIndexRouteImport } from './routes/_authenticated/dashboard/rosters/index'
 import { Route as AuthenticatedDashboardRostersRosterIdRouteImport } from './routes/_authenticated/dashboard/rosters/$rosterId'
+import { Route as ApiAutogradingConfigReposetoryIdRouteImport } from './routes/api/autograding/config.$reposetoryId'
 import { Route as AuthenticatedDashboardAdminSettingsIndexRouteImport } from './routes/_authenticated/dashboard/_admin/settings/index'
 import { Route as AuthenticatedDashboardAdminSettingsQuotasRouteImport } from './routes/_authenticated/dashboard/_admin/settings/quotas'
 import { Route as AuthenticatedDashboardOrganizationsOrgSlugIndexRouteImport } from './routes/_authenticated/dashboard/organizations/$orgSlug/index'
@@ -113,6 +114,12 @@ const AuthenticatedDashboardRostersRosterIdRoute =
     path: '/$rosterId',
     getParentRoute: () => AuthenticatedDashboardRostersRouteRoute,
   } as any)
+const ApiAutogradingConfigReposetoryIdRoute =
+  ApiAutogradingConfigReposetoryIdRouteImport.update({
+    id: '/api/autograding/config/$reposetoryId',
+    path: '/api/autograding/config/$reposetoryId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedDashboardAdminSettingsIndexRoute =
   AuthenticatedDashboardAdminSettingsIndexRouteImport.update({
     id: '/',
@@ -150,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/settings': typeof AuthenticatedDashboardAdminSettingsRouteRouteWithChildren
   '/dashboard/organizations/$orgSlug': typeof AuthenticatedDashboardOrganizationsOrgSlugRouteRouteWithChildren
   '/dashboard/rosters/$rosterId': typeof AuthenticatedDashboardRostersRosterIdRoute
+  '/api/autograding/config/$reposetoryId': typeof ApiAutogradingConfigReposetoryIdRoute
   '/dashboard/organizations/': typeof AuthenticatedDashboardOrganizationsIndexRoute
   '/dashboard/rosters/': typeof AuthenticatedDashboardRostersIndexRoute
   '/dashboard/settings/quotas': typeof AuthenticatedDashboardAdminSettingsQuotasRoute
@@ -164,6 +172,7 @@ export interface FileRoutesByTo {
   '/dashboard/autograding': typeof AuthenticatedDashboardAutogradingRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/dashboard/rosters/$rosterId': typeof AuthenticatedDashboardRostersRosterIdRoute
+  '/api/autograding/config/$reposetoryId': typeof ApiAutogradingConfigReposetoryIdRoute
   '/dashboard/organizations': typeof AuthenticatedDashboardOrganizationsIndexRoute
   '/dashboard/rosters': typeof AuthenticatedDashboardRostersIndexRoute
   '/dashboard/settings/quotas': typeof AuthenticatedDashboardAdminSettingsQuotasRoute
@@ -186,6 +195,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard/_admin/settings': typeof AuthenticatedDashboardAdminSettingsRouteRouteWithChildren
   '/_authenticated/dashboard/organizations/$orgSlug': typeof AuthenticatedDashboardOrganizationsOrgSlugRouteRouteWithChildren
   '/_authenticated/dashboard/rosters/$rosterId': typeof AuthenticatedDashboardRostersRosterIdRoute
+  '/api/autograding/config/$reposetoryId': typeof ApiAutogradingConfigReposetoryIdRoute
   '/_authenticated/dashboard/organizations/': typeof AuthenticatedDashboardOrganizationsIndexRoute
   '/_authenticated/dashboard/rosters/': typeof AuthenticatedDashboardRostersIndexRoute
   '/_authenticated/dashboard/_admin/settings/quotas': typeof AuthenticatedDashboardAdminSettingsQuotasRoute
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/organizations/$orgSlug'
     | '/dashboard/rosters/$rosterId'
+    | '/api/autograding/config/$reposetoryId'
     | '/dashboard/organizations/'
     | '/dashboard/rosters/'
     | '/dashboard/settings/quotas'
@@ -221,6 +232,7 @@ export interface FileRouteTypes {
     | '/dashboard/autograding'
     | '/api/auth/$'
     | '/dashboard/rosters/$rosterId'
+    | '/api/autograding/config/$reposetoryId'
     | '/dashboard/organizations'
     | '/dashboard/rosters'
     | '/dashboard/settings/quotas'
@@ -242,6 +254,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard/_admin/settings'
     | '/_authenticated/dashboard/organizations/$orgSlug'
     | '/_authenticated/dashboard/rosters/$rosterId'
+    | '/api/autograding/config/$reposetoryId'
     | '/_authenticated/dashboard/organizations/'
     | '/_authenticated/dashboard/rosters/'
     | '/_authenticated/dashboard/_admin/settings/quotas'
@@ -255,6 +268,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiAutogradingConfigReposetoryIdRoute: typeof ApiAutogradingConfigReposetoryIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -363,6 +377,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/rosters/$rosterId'
       preLoaderRoute: typeof AuthenticatedDashboardRostersRosterIdRouteImport
       parentRoute: typeof AuthenticatedDashboardRostersRouteRoute
+    }
+    '/api/autograding/config/$reposetoryId': {
+      id: '/api/autograding/config/$reposetoryId'
+      path: '/api/autograding/config/$reposetoryId'
+      fullPath: '/api/autograding/config/$reposetoryId'
+      preLoaderRoute: typeof ApiAutogradingConfigReposetoryIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/dashboard/_admin/settings/': {
       id: '/_authenticated/dashboard/_admin/settings/'
@@ -525,6 +546,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   LoginRoute: LoginRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiAutogradingConfigReposetoryIdRoute: ApiAutogradingConfigReposetoryIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
