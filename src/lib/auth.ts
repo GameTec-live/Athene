@@ -30,6 +30,7 @@ export const auth = betterAuth({
                         "email",
                         "groups",
                         "read:organization",
+                        "read:repository",
                     ],
                     overrideUserInfo: true,
                 },
